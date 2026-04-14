@@ -34,6 +34,11 @@ import CommissionPage from '../pages/commissions/CommissionPage'
 import ProfilePage from '../pages/settings/ProfilePage'
 import UserManagementPage from '../pages/settings/UserManagementPage'
 import ProjectSettingsPage from '../pages/settings/ProjectSettingsPage'
+import ReportsPage from '../pages/reports/ReportsPage'
+import CampaignPage from '../pages/campaigns/CampaignPage'
+import HandoverListPage from '../pages/handovers/HandoverListPage'
+import HandoverDetailPage from '../pages/handovers/HandoverDetailPage'
+import WaitlistPage from '../pages/waitlist/WaitlistPage'
 
 // 404
 import NotFoundPage from '../pages/NotFoundPage'
@@ -105,10 +110,6 @@ const router = createBrowserRouter([
     element: <WithLayout allowedRoles={['marketing', 'manager']}><BookingListPage /></WithLayout>,
   },
   {
-    path: '/bookings/new',
-    element: <WithLayout allowedRoles={['marketing', 'manager']}><BookingDetailPage /></WithLayout>,
-  },
-  {
     path: '/bookings/:id',
     element: <WithLayout allowedRoles={['marketing', 'manager']}><BookingDetailPage /></WithLayout>,
   },
@@ -117,10 +118,6 @@ const router = createBrowserRouter([
   {
     path: '/kpr',
     element: <WithLayout allowedRoles={['marketing', 'manager', 'owner']}><KprListPage /></WithLayout>,
-  },
-  {
-    path: '/kpr/new',
-    element: <WithLayout allowedRoles={['marketing', 'manager']}><KprDetailPage /></WithLayout>,
   },
   {
     path: '/kpr/:id',
@@ -145,6 +142,34 @@ const router = createBrowserRouter([
   {
     path: '/settings/project',
     element: <WithLayout allowedRoles={['manager']}><ProjectSettingsPage /></WithLayout>,
+  },
+
+  // Reports
+  {
+    path: '/reports',
+    element: <WithLayout allowedRoles={['marketing', 'manager', 'owner']}><ReportsPage /></WithLayout>,
+  },
+
+  // Campaigns
+  {
+    path: '/campaigns',
+    element: <WithLayout allowedRoles={['marketing', 'manager']}><CampaignPage /></WithLayout>,
+  },
+
+  // Handovers
+  {
+    path: '/handovers',
+    element: <WithLayout allowedRoles={['marketing', 'manager']}><HandoverListPage /></WithLayout>,
+  },
+  {
+    path: '/handovers/:id',
+    element: <WithLayout allowedRoles={['marketing', 'manager']}><HandoverDetailPage /></WithLayout>,
+  },
+
+  // Waitlist / NUP
+  {
+    path: '/waitlist',
+    element: <WithLayout allowedRoles={['marketing', 'manager']}><WaitlistPage /></WithLayout>,
   },
 
   // 404

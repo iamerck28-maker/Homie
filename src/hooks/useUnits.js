@@ -66,7 +66,28 @@ export function useUnits(projectId = null) {
   }
 
   useEffect(() => {
-    fetchUnits()
+    let mounted = true
+    const safeFetch = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        let query = supabase
+          .from('units')
+          .select('*, projects(name)')
+          .order('nomor', { ascending: true })
+        if (projectId) query = query.eq('project_id', projectId)
+        const { data, error } = await query
+        if (!mounted) return
+        if (error) throw error
+        setUnits(data || [])
+      } catch (err) {
+        if (mounted) setError(err.message)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    safeFetch()
+    return () => { mounted = false }
   }, [projectId])
 
   return { units, loading, error, refetch: fetchUnits, addUnit, updateUnit, updateUnitStatus }

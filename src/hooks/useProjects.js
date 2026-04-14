@@ -25,7 +25,26 @@ export function useProjects() {
   }
 
   useEffect(() => {
-    fetchProjects()
+    let mounted = true
+    const run = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false })
+        if (!mounted) return
+        if (error) throw error
+        setProjects(data || [])
+      } catch (err) {
+        if (mounted) setError(err.message)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    run()
+    return () => { mounted = false }
   }, [])
 
   return { projects, loading, error, refetch: fetchProjects }

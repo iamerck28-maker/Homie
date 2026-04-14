@@ -24,8 +24,25 @@ export default function Button({
   loading = false,
   type = 'button',
   onClick,
+  as: Component,
   ...props
 }) {
+  if (Component) {
+    return (
+      <Component
+        className={clsx(
+          'inline-flex items-center justify-center gap-2 font-medium transition-colors duration-200',
+          variants[variant],
+          sizes[size],
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </Component>
+    )
+  }
+
   return (
     <button
       type={type}

@@ -86,7 +86,36 @@ export function useKpr(projectId = null) {
   }
 
   useEffect(() => {
-    fetchKpr()
+    let mounted = true
+    const run = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        let query = supabase
+          .from('kpr_tracking')
+          .select(`
+            *,
+            booking:bookings(
+              id, buyer_name, buyer_phone, payment_method, booking_date,
+              unit:units(id, nomor, blok, cluster, tipe, harga),
+              project:projects(id, name)
+            ),
+            kpr_documents(*)
+          `)
+          .order('created_at', { ascending: false })
+        if (projectId) query = query.eq('booking.project_id', projectId)
+        const { data, error } = await query
+        if (!mounted) return
+        if (error) throw error
+        setKprList(data || [])
+      } catch (err) {
+        if (mounted) setError(err.message)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    run()
+    return () => { mounted = false }
   }, [projectId])
 
   return { kprList, loading, error, refetch: fetchKpr, addKpr, updateKpr, updateDocument, addDocument }

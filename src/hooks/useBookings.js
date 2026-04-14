@@ -61,7 +61,34 @@ export function useBookings(projectId = null) {
   }
 
   useEffect(() => {
-    fetchBookings()
+    let mounted = true
+    const run = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        let query = supabase
+          .from('bookings')
+          .select(`
+            *,
+            unit:units(id, nomor, blok, cluster, tipe, harga),
+            project:projects(id, name),
+            prospect:prospects(id, full_name),
+            created_by_profile:profiles!bookings_created_by_fkey(id, full_name)
+          `)
+          .order('created_at', { ascending: false })
+        if (projectId) query = query.eq('project_id', projectId)
+        const { data, error } = await query
+        if (!mounted) return
+        if (error) throw error
+        setBookings(data || [])
+      } catch (err) {
+        if (mounted) setError(err.message)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    run()
+    return () => { mounted = false }
   }, [projectId])
 
   return { bookings, loading, error, refetch: fetchBookings, addBooking, updateBooking }

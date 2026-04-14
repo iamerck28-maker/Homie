@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, FileText, Download, Plus } from 'lucide-react'
+import { ArrowLeft, FileText, Plus, Trash2 } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -12,8 +12,8 @@ import useAuthStore from '../../store/authStore'
 import { formatDate, formatRupiah, PAYMENT_METHOD_LABELS } from '../../lib/utils'
 import { generateSPR } from '../../lib/spr'
 import { useUnits } from '../../hooks/useUnits'
-import { useProspects } from '../../hooks/useProspects'
 import { useProjects } from '../../hooks/useProjects'
+import { usePayments } from '../../hooks/usePayments'
 
 export default function BookingDetailPage() {
   const { id } = useParams()
@@ -32,6 +32,38 @@ export default function BookingDetailPage() {
   const [selectedProject, setSelectedProject] = useState('')
   const { units } = useUnits(selectedProject || null)
   const availableUnits = units.filter((u) => u.status === 'available')
+
+  // Payments
+  const { payments, totalPaid, addPayment, deletePayment } = usePayments(!isNew ? id : null)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentForm, setPaymentForm] = useState({
+    type: 'dp', amount: '', payment_date: new Date().toISOString().split('T')[0],
+    payment_method: 'transfer', notes: '',
+  })
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const [paymentError, setPaymentError] = useState('')
+
+  const PAYMENT_TYPE_LABELS = { dp: 'Down Payment', cicilan: 'Cicilan', pelunasan: 'Pelunasan', lainnya: 'Lainnya' }
+  const PAYMENT_METHOD_LABELS2 = { cash: 'Cash', transfer: 'Transfer', cek: 'Cek', giro: 'Giro' }
+
+  const handleAddPayment = async (e) => {
+    e.preventDefault()
+    if (!paymentForm.amount || !paymentForm.payment_date) {
+      setPaymentError('Nominal dan tanggal wajib diisi')
+      return
+    }
+    setPaymentLoading(true)
+    setPaymentError('')
+    try {
+      await addPayment({ ...paymentForm, amount: parseFloat(paymentForm.amount), created_by: profile?.id })
+      setShowPaymentModal(false)
+      setPaymentForm({ type: 'dp', amount: '', payment_date: new Date().toISOString().split('T')[0], payment_method: 'transfer', notes: '' })
+    } catch (err) {
+      setPaymentError(err.message)
+    } finally {
+      setPaymentLoading(false)
+    }
+  }
 
   const [form, setForm] = useState({
     prospect_id: prospectId || '',
@@ -250,7 +282,101 @@ export default function BookingDetailPage() {
             )}
           </div>
         )}
+
+        {/* Tracking Pembayaran */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6 md:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-semibold text-gray-900">Riwayat Pembayaran</h3>
+              {booking.unit?.harga > 0 && (
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Terbayar: {formatRupiah(totalPaid)} / {formatRupiah(booking.unit?.harga)}
+                  {booking.unit?.harga > 0 && (
+                    <span className="ml-1 text-primary-600 font-medium">
+                      ({Math.round((totalPaid / booking.unit.harga) * 100)}%)
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+            <Button size="xs" onClick={() => setShowPaymentModal(true)}>
+              <Plus size={14} /> Tambah
+            </Button>
+          </div>
+
+          {/* Progress bar */}
+          {booking.unit?.harga > 0 && (
+            <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
+              <div
+                className="bg-primary-600 h-2 rounded-full transition-all"
+                style={{ width: `${Math.min(100, (totalPaid / booking.unit.harga) * 100)}%` }}
+              />
+            </div>
+          )}
+
+          {payments.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4 text-center">Belum ada riwayat pembayaran</p>
+          ) : (
+            <div className="space-y-2">
+              {payments.map((p) => (
+                <div key={p.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs bg-primary-50 text-primary-700 font-medium px-2 py-1 rounded">
+                      {PAYMENT_TYPE_LABELS[p.type]}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{formatRupiah(p.amount)}</p>
+                      <p className="text-xs text-gray-400">{formatDate(p.payment_date)} · {PAYMENT_METHOD_LABELS2[p.payment_method]}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {p.notes && <p className="text-xs text-gray-400 max-w-[150px] truncate">{p.notes}</p>}
+                    {role === 'manager' && (
+                      <button onClick={() => deletePayment(p.id)} className="text-gray-300 hover:text-red-500 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Modal tambah pembayaran */}
+      <Modal
+        isOpen={showPaymentModal}
+        onClose={() => { setShowPaymentModal(false); setPaymentError('') }}
+        title="Tambah Pembayaran"
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowPaymentModal(false)}>Batal</Button>
+            <Button onClick={handleAddPayment} loading={paymentLoading}>Simpan</Button>
+          </>
+        }
+      >
+        <form onSubmit={handleAddPayment} className="space-y-4">
+          {paymentError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{paymentError}</div>
+          )}
+          <Select label="Jenis Pembayaran" value={paymentForm.type}
+            onChange={(e) => setPaymentForm({ ...paymentForm, type: e.target.value })}>
+            {Object.entries(PAYMENT_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </Select>
+          <Input label="Nominal (Rp)" type="number" required value={paymentForm.amount}
+            onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })} />
+          <Input label="Tanggal Bayar" type="date" required value={paymentForm.payment_date}
+            onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })} />
+          <Select label="Metode" value={paymentForm.payment_method}
+            onChange={(e) => setPaymentForm({ ...paymentForm, payment_method: e.target.value })}>
+            {Object.entries(PAYMENT_METHOD_LABELS2).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </Select>
+          <Textarea label="Catatan" value={paymentForm.notes}
+            onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })} />
+        </form>
+      </Modal>
     </PageWrapper>
   )
 }

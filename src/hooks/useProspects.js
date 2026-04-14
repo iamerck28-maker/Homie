@@ -91,7 +91,34 @@ export function useProspects(projectId = null) {
   }
 
   useEffect(() => {
-    fetchProspects()
+    let mounted = true
+    const safeFetch = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        let query = supabase
+          .from('prospects')
+          .select(`
+            *,
+            assigned_to_profile:profiles!prospects_assigned_to_fkey(id, full_name),
+            unit:units(id, nomor, blok, cluster, tipe, harga),
+            project:projects(id, name),
+            campaign:campaigns(id, name, channel)
+          `)
+          .order('created_at', { ascending: false })
+        if (projectId) query = query.eq('project_id', projectId)
+        const { data, error } = await query
+        if (!mounted) return
+        if (error) throw error
+        setProspects(data || [])
+      } catch (err) {
+        if (mounted) setError(err.message)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    safeFetch()
+    return () => { mounted = false }
   }, [projectId])
 
   return {

@@ -21,23 +21,23 @@ Platform manajemen marketing developer properti Indonesia.
 ---
 
 ### 🗄️ Langkah 2: Database Supabase
-- [ ] Buat tabel `profiles`
-- [ ] Buat tabel `projects`
-- [ ] Buat tabel `units`
-- [ ] Buat tabel `campaigns`
-- [ ] Buat tabel `prospects`
-- [ ] Buat tabel `prospect_activities`
-- [ ] Buat tabel `bookings`
-- [ ] Buat tabel `kpr_tracking`
-- [ ] Buat tabel `kpr_documents`
-- [ ] Buat tabel `commissions`
-- [ ] Buat tabel `handovers` (struktur saja, UI di Fase 2)
-- [ ] Aktifkan RLS di semua tabel
-- [ ] Buat helper function `get_my_role()`
-- [ ] Buat helper function `get_my_projects()`
-- [ ] Tulis dan test semua RLS policy (marketing, manager, owner)
-- [ ] Buat trigger: otomatis insert ke `profiles` saat user baru register
-- [ ] Seed data dummy: 1 owner, 1 manager, 2 marketing, 1 project, 10 unit
+- [x] Buat tabel `profiles`
+- [x] Buat tabel `projects`
+- [x] Buat tabel `units`
+- [x] Buat tabel `campaigns`
+- [x] Buat tabel `prospects`
+- [x] Buat tabel `prospect_activities`
+- [x] Buat tabel `bookings`
+- [x] Buat tabel `kpr_tracking`
+- [x] Buat tabel `kpr_documents`
+- [x] Buat tabel `commissions`
+- [x] Buat tabel `handovers` (struktur saja, UI di Fase 2)
+- [x] Aktifkan RLS di semua tabel
+- [x] Buat helper function `get_my_role()`
+- [x] Buat helper function `get_my_projects()`
+- [x] Tulis dan test semua RLS policy (marketing, manager, owner)
+- [x] Buat trigger: otomatis insert ke `profiles` saat user baru register
+- [x] Seed data dummy: 1 owner, 1 manager, 2 marketing, 1 project, 10 unit
 
 ---
 
