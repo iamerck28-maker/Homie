@@ -26,7 +26,7 @@ export default function BookingDetailPage() {
   const [loading, setLoading] = useState(!isNew)
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
-  const [showForm, setShowForm] = useState(isNew)
+
 
   const { projects } = useProjects()
   const [selectedProject, setSelectedProject] = useState('')
@@ -117,9 +117,16 @@ export default function BookingDetailPage() {
     setFormLoading(true)
     setFormError('')
     try {
+      const payload = {
+        ...form,
+        booking_fee: form.booking_fee ? parseFloat(form.booking_fee) : null,
+        prospect_id: form.prospect_id || null,
+        project_id: form.project_id || null,
+        created_by: profile?.id,
+      }
       const { data, error } = await supabase
         .from('bookings')
-        .insert([{ ...form, booking_fee: form.booking_fee ? parseFloat(form.booking_fee) : null, created_by: profile?.id }])
+        .insert([payload])
         .select()
         .single()
 
