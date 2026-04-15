@@ -56,15 +56,13 @@ export default function AuthProvider({ children }) {
         setLoading(false)
       })
 
-    // Listen perubahan auth state
+    // Listen perubahan auth state — update silent tanpa full-screen loading
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         clearSafetyTimeout()
         clearAuth()
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        // Set loading true agar ProtectedRoute menunggu profile siap
-        setLoading(true)
-        armSafetyTimeout()
+      } else {
+        // SIGNED_IN, TOKEN_REFRESHED, INITIAL_SESSION — update session/profile tanpa ganggu UI
         try {
           const profile = await fetchProfile(session.user.id)
           setSession(session)
