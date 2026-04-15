@@ -3,7 +3,10 @@ import useAuthStore from '../store/authStore'
 import { getDefaultRoute } from '../lib/utils'
 
 export default function ProtectedRoute({ children, allowedRoles = [] }) {
-  const { session, role } = useAuthStore()
+  const { session, role, loading } = useAuthStore()
+
+  // Tunggu auth selesai sebelum redirect — mencegah infinite loop saat re-login
+  if (loading) return null
 
   if (!session) return <Navigate to="/login" replace />
 
