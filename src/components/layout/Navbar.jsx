@@ -1,11 +1,56 @@
-import { useState } from 'react'
-import { LogOut, Bell, ChevronDown, Menu } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { LogOut, Bell, ChevronDown, Menu, Check, Trash2, BellOff } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { useNotifications } from '../../hooks/useNotifications'
 import { getInitials } from '../../lib/utils'
+
+const TYPE_ICON = {
+  booking: '📋',
+  kpr: '🏦',
+  prospect: '👤',
+  commission: '💰',
+  handover: '🏠',
+  general: '📢',
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Baru saja'
+  if (mins < 60) return `${mins} mnt lalu`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} jam lalu`
+  const days = Math.floor(hours / 24)
+  return `${days} hari lalu`
+}
 
 export default function Navbar({ onMobileMenuToggle }) {
   const { profile, role, logout } = useAuth()
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications()
+  const navigate = useNavigate()
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const notifRef = useRef(null)
+
+  // Close notification panel when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const handleNotificationClick = (notif) => {
+    if (!notif.is_read) markAsRead(notif.id)
+    if (notif.link) {
+      navigate(notif.link)
+      setShowNotifications(false)
+    }
+  }
 
   const roleLabel = {
     owner: 'Owner',
@@ -29,20 +74,87 @@ export default function Navbar({ onMobileMenuToggle }) {
         <Menu size={20} />
       </button>
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Right side */}
       <div className="flex items-center gap-2">
         {/* Notification bell */}
-        <button className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
-          <Bell size={18} />
-        </button>
+        <div className="relative" ref={notifRef}>
+          <button
+            onClick={() => { setShowNotifications(!showNotifications); setShowDropdown(false) }}
+            className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {showNotifications && (
+            <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 z-30 overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  Notifikasi {unreadCount > 0 && <span className="ml-1 text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">{unreadCount}</span>}
+                </h3>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                  >
+                    <Check size={12} /> Tandai semua dibaca
+                  </button>
+                )}
+              </div>
+
+              {/* List */}
+              <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+                    <BellOff size={28} className="mb-2" />
+                    <p className="text-sm">Belum ada notifikasi</p>
+                  </div>
+                ) : (
+                  notifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      className={`flex gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${!notif.is_read ? 'bg-primary-50/40' : ''}`}
+                      onClick={() => handleNotificationClick(notif)}
+                    >
+                      <span className="text-lg flex-shrink-0 mt-0.5">{TYPE_ICON[notif.type] || '📢'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm leading-snug ${!notif.is_read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                          {notif.title}
+                        </p>
+                        {notif.body && (
+                          <p className="text-xs text-gray-500 mt-0.5 truncate">{notif.body}</p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-1">{timeAgo(notif.created_at)}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        {!notif.is_read && (
+                          <span className="w-2 h-2 bg-primary-500 rounded-full" />
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteNotification(notif.id) }}
+                          className="text-gray-300 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* User dropdown */}
         <div className="relative">
           <button
-            onClick={() => setShowDropdown(!showDropdown)}
+            onClick={() => { setShowDropdown(!showDropdown); setShowNotifications(false) }}
             className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors"
           >
             <div className="w-7 h-7 rounded-full bg-primary-600 flex items-center justify-center">
@@ -61,10 +173,7 @@ export default function Navbar({ onMobileMenuToggle }) {
 
           {showDropdown && (
             <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowDropdown(false)}
-              />
+              <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)} />
               <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-20 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-sm font-medium text-gray-900">{profile?.full_name}</p>

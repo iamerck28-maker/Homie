@@ -8,6 +8,10 @@ export function useAuth() {
   const navigate = useNavigate()
 
   const login = async (email, password) => {
+    // Bersihkan stale token di localStorage tanpa network request
+    // Mencegah hanging 60 detik saat ada sesi lama yang expired
+    await supabase.auth.signOut({ scope: 'local' })
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
 

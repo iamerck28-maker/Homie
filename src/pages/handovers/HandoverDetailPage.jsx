@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, FileText, CheckCircle, XCircle } from 'lucide-react'
+import { ArrowLeft, FileText, CheckCircle, XCircle, Camera, Trash2, Loader } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
-import Badge from '../../components/ui/Badge'
 import Input, { Select, Textarea } from '../../components/ui/Input'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import { supabase } from '../../lib/supabase'
@@ -27,6 +26,10 @@ export default function HandoverDetailPage() {
   const [defectNotes, setDefectNotes] = useState('')
   const [actualDate, setActualDate] = useState('')
   const [status, setStatus] = useState('scheduled')
+  const [photos, setPhotos] = useState([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     fetchHandover()
@@ -54,6 +57,7 @@ export default function HandoverDetailPage() {
       setDefectNotes(data.defect_notes || '')
       setActualDate(data.actual_date || '')
       setStatus(data.status || 'scheduled')
+      setPhotos(data.photos || [])
     }
     setLoading(false)
   }
@@ -65,10 +69,51 @@ export default function HandoverDetailPage() {
       defect_notes: defectNotes || null,
       actual_date: actualDate || null,
       status,
+      photos,
       updated_at: new Date().toISOString(),
     }).eq('id', id)
     setSaving(false)
     fetchHandover()
+  }
+
+  const handleUploadPhotos = async (e) => {
+    const files = Array.from(e.target.files)
+    if (!files.length) return
+    setUploading(true)
+    setUploadError('')
+    try {
+      const uploaded = []
+      for (const file of files) {
+        const ext = file.name.split('.').pop()
+        const path = `${id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+        const { error } = await supabase.storage
+          .from('handover-photos')
+          .upload(path, file, { upsert: false })
+        if (error) throw error
+        const { data: { publicUrl } } = supabase.storage
+          .from('handover-photos')
+          .getPublicUrl(path)
+        uploaded.push(publicUrl)
+      }
+      const newPhotos = [...photos, ...uploaded]
+      setPhotos(newPhotos)
+      await supabase.from('handovers').update({ photos: newPhotos }).eq('id', id)
+    } catch (err) {
+      setUploadError(err.message)
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleDeletePhoto = async (url) => {
+    // Extract storage path from public URL
+    const path = url.split('/handover-photos/')[1]
+    if (!path) return
+    await supabase.storage.from('handover-photos').remove([path])
+    const newPhotos = photos.filter((p) => p !== url)
+    setPhotos(newPhotos)
+    await supabase.from('handovers').update({ photos: newPhotos }).eq('id', id)
   }
 
   const handleGenerateBAST = async () => {
@@ -203,6 +248,73 @@ export default function HandoverDetailPage() {
               placeholder="Tuliskan kerusakan atau hal yang perlu diperbaiki sebelum/sesudah serah terima..."
               rows={4}
             />
+          </div>
+
+          {/* Foto kondisi unit */}
+          <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-gray-900">Foto Kondisi Unit</h3>
+                <p className="text-xs text-gray-400 mt-0.5">{photos.length} foto · maks. 10 MB per file</p>
+              </div>
+              {(role === 'marketing' || role === 'manager') && (
+                <Button
+                  size="xs"
+                  variant="secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                  loading={uploading}
+                >
+                  {uploading ? <Loader size={14} className="animate-spin" /> : <Camera size={14} />}
+                  Upload Foto
+                </Button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                multiple
+                className="hidden"
+                onChange={handleUploadPhotos}
+              />
+            </div>
+
+            {uploadError && (
+              <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">{uploadError}</p>
+            )}
+
+            {photos.length === 0 ? (
+              <div
+                className="border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center py-10 text-gray-400 cursor-pointer hover:border-primary-300 hover:text-primary-400 transition-colors"
+                onClick={() => (role === 'marketing' || role === 'manager') && fileInputRef.current?.click()}
+              >
+                <Camera size={32} className="mb-2" />
+                <p className="text-sm">Belum ada foto</p>
+                {(role === 'marketing' || role === 'manager') && (
+                  <p className="text-xs mt-1">Klik untuk upload</p>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {photos.map((url) => (
+                  <div key={url} className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100">
+                    <img
+                      src={url}
+                      alt="Foto kondisi unit"
+                      className="w-full h-full object-cover"
+                    />
+                    {role === 'manager' && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePhoto(url)}
+                        className="absolute top-1.5 right-1.5 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

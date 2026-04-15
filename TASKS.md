@@ -121,12 +121,12 @@ Platform manajemen marketing developer properti Indonesia.
 ### 💰 Tracking Pembayaran
 - [x] Buat `src/hooks/usePayments.js`
 - [x] UI tracking DP & cicilan di `BookingDetailPage.jsx` — riwayat, progress bar, tambah/hapus
-- [ ] Tabel `payments` di Supabase dengan RLS policy
+- [x] Tabel `payments` di Supabase dengan RLS policy
 
 ### 📊 Komisi Sales
 - [x] Buat `CommissionPage.jsx` — rekap komisi, approve, tandai dibayar
 - [x] Hitung komisi dari persentase harga unit atau nominal langsung
-- [ ] Tabel `commissions` RLS: marketing hanya lihat milik sendiri
+- [x] Tabel `commissions` RLS: marketing hanya lihat milik sendiri
 
 ### 📣 Campaign Analytics
 - [x] Buat `CampaignPage.jsx` — ROI, closing rate, cost per lead per campaign
@@ -143,7 +143,7 @@ Platform manajemen marketing developer properti Indonesia.
 
 ### 📋 NUP / Waitlist
 - [x] Buat `WaitlistPage.jsx` — daftar antri, update status, assign sales
-- [ ] Tabel `waitlist` di Supabase dengan RLS policy dan auto-increment `nup_number`
+- [x] Tabel `waitlist` di Supabase dengan RLS policy dan auto-increment `nup_number`
 
 ---
 
@@ -160,8 +160,8 @@ Platform manajemen marketing developer properti Indonesia.
 ## Fase 2 — Yang Belum Dibangun
 
 - [ ] WhatsApp notifikasi (reminder follow-up, jatuh tempo KPR)
-- [ ] Upload foto kondisi unit saat serah terima
-- [ ] Notifikasi in-app (bell icon, badge unread)
+- [x] Upload foto kondisi unit saat serah terima
+- [x] Notifikasi in-app (bell icon, badge unread)
 
 ---
 
