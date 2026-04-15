@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link, useSearchParams } from 'react-router-dom'
+import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, FileText, Plus, Trash2 } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
@@ -18,6 +18,7 @@ import { usePayments } from '../../hooks/usePayments'
 export default function BookingDetailPage() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const prospectId = searchParams.get('prospect')
   const { profile, role } = useAuthStore()
 
@@ -135,7 +136,7 @@ export default function BookingDetailPage() {
       // Update unit status to hold
       await supabase.from('units').update({ status: 'hold', held_by: profile?.id, held_at: new Date().toISOString() }).eq('id', form.unit_id)
 
-      window.location.href = `/bookings/${data.id}`
+      navigate(`/bookings/${data.id}`)
     } catch (err) {
       setFormError(err.message)
     } finally {

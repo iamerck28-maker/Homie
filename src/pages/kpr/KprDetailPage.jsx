@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link, useSearchParams } from 'react-router-dom'
+import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Check, X } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
@@ -32,7 +32,8 @@ export default function KprDetailPage() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
   const bookingId = searchParams.get('booking')
-  const { profile, role } = useAuthStore()
+  const navigate = useNavigate()
+  const { profile } = useAuthStore()
 
   const isNew = id === 'new'
   const [kpr, setKpr] = useState(null)
@@ -115,7 +116,7 @@ export default function KprDetailPage() {
       }))
       await supabase.from('kpr_documents').insert(defaultDocs)
 
-      window.location.href = `/kpr/${data.id}`
+      navigate(`/kpr/${data.id}`)
     } catch (err) {
       setFormError(err.message)
     } finally {
