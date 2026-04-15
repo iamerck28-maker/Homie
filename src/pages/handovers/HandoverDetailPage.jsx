@@ -13,7 +13,7 @@ import { generateBAST } from '../../lib/bast'
 
 const STATUS_OPTIONS = [
   { value: 'scheduled', label: 'Terjadwal' },
-  { value: 'in_progress', label: 'Dalam Proses' },
+  { value: 'rescheduled', label: 'Dijadwal Ulang' },
   { value: 'done', label: 'Selesai' },
 ]
 

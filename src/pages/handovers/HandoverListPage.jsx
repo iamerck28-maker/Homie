@@ -14,8 +14,8 @@ import { formatDate } from '../../lib/utils'
 import { DEFAULT_CHECKLIST } from '../../lib/bast'
 import { useBookings } from '../../hooks/useBookings'
 
-const STATUS_LABELS = { scheduled: 'Terjadwal', in_progress: 'Dalam Proses', done: 'Selesai' }
-const STATUS_VARIANTS = { scheduled: 'warning', in_progress: 'info', done: 'success' }
+const STATUS_LABELS = { scheduled: 'Terjadwal', rescheduled: 'Dijadwal Ulang', done: 'Selesai' }
+const STATUS_VARIANTS = { scheduled: 'warning', rescheduled: 'info', done: 'success' }
 
 export default function HandoverListPage() {
   const { profile, role } = useAuthStore()

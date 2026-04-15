@@ -62,7 +62,7 @@ export default function ManagerDashboard() {
       // Prospek bulan lalu
       const { data: prospectsLastMonth } = await supabase
         .from('prospects')
-        .select('id')
+        .select('id, status')
         .gte('created_at', startOfLastMonth)
         .lte('created_at', endOfLastMonth)
 

@@ -164,6 +164,48 @@ export function exportCommissionsExcel(commissions) {
   downloadExcel(rows, `laporan-komisi-${Date.now()}`, 'Komisi')
 }
 
+// ── Export KPR ──────────────────────────────────────────────────────────────
+
+export function exportKprPDF(kprList, projectName = 'Semua Project') {
+  const doc = new jsPDF()
+  const y = pdfHeader(doc, 'Laporan KPR Tracker', `${projectName} · ${formatDate(new Date())}`)
+
+  autoTable(doc, {
+    startY: y,
+    head: [['Pembeli', 'Unit', 'Bank', 'Status', 'Tgl. Pengajuan', 'SP3K', 'Akad']],
+    body: kprList.map((k) => [
+      k.booking?.buyer_name || '-',
+      k.booking?.unit ? `Unit ${k.booking.unit.nomor}` : '-',
+      k.bank_name || '-',
+      k.status?.toUpperCase() || '-',
+      k.submission_date ? formatDate(k.submission_date) : '-',
+      k.sp3k_date ? formatDate(k.sp3k_date) : '-',
+      k.akad_date ? formatDate(k.akad_date) : '-',
+    ]),
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [22, 163, 74], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 250, 245] },
+  })
+
+  doc.save(`laporan-kpr-${Date.now()}.pdf`)
+}
+
+export function exportKprExcel(kprList) {
+  const rows = kprList.map((k) => ({
+    'Pembeli': k.booking?.buyer_name || '-',
+    'No. HP': k.booking?.buyer_phone || '-',
+    'Unit': k.booking?.unit ? `Unit ${k.booking.unit.nomor}` : '-',
+    'Project': k.booking?.project?.name || '-',
+    'Bank': k.bank_name || '-',
+    'Status': k.status || '-',
+    'Tanggal Pengajuan': k.submission_date ? formatDate(k.submission_date) : '-',
+    'SP3K': k.sp3k_date ? formatDate(k.sp3k_date) : '-',
+    'Akad': k.akad_date ? formatDate(k.akad_date) : '-',
+    'Catatan': k.notes || '-',
+  }))
+  downloadExcel(rows, `laporan-kpr-${Date.now()}`, 'KPR')
+}
+
 // ── Helper Excel ─────────────────────────────────────────────────────────────
 
 function downloadExcel(rows, filename, sheetName = 'Data') {

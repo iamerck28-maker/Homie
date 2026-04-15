@@ -7,6 +7,7 @@ import { Select } from '../../components/ui/Input'
 import { useBookings } from '../../hooks/useBookings'
 import { useProspects } from '../../hooks/useProspects'
 import { useProjects } from '../../hooks/useProjects'
+import { useKpr } from '../../hooks/useKpr'
 import { supabase } from '../../lib/supabase'
 import useAuthStore from '../../store/authStore'
 import { formatRupiah } from '../../lib/utils'
@@ -14,6 +15,7 @@ import {
   exportBookingsPDF, exportBookingsExcel,
   exportProspectsPDF, exportProspectsExcel,
   exportCommissionsPDF, exportCommissionsExcel,
+  exportKprPDF, exportKprExcel,
 } from '../../lib/export'
 
 export default function ReportsPage() {
@@ -22,6 +24,7 @@ export default function ReportsPage() {
   const [selectedProject, setSelectedProject] = useState('')
   const { bookings, loading: loadingBookings } = useBookings(selectedProject || null)
   const { prospects, loading: loadingProspects } = useProspects(selectedProject || null)
+  const { kprList, loading: loadingKpr } = useKpr()
   const [loadingCommissions, setLoadingCommissions] = useState(false)
   const [commissions, setCommissions] = useState(null)
 
@@ -67,6 +70,16 @@ export default function ReportsPage() {
       actions: [
         { label: 'PDF', icon: <FileText size={14} />, onClick: () => exportProspectsPDF(prospects, projectName) },
         { label: 'Excel', icon: <FileSpreadsheet size={14} />, onClick: () => exportProspectsExcel(prospects, projectName) },
+      ],
+    },
+    {
+      title: 'Laporan KPR',
+      description: `${kprList.length} pengajuan`,
+      value: null,
+      loading: loadingKpr,
+      actions: [
+        { label: 'PDF', icon: <FileText size={14} />, onClick: () => exportKprPDF(kprList, projectName) },
+        { label: 'Excel', icon: <FileSpreadsheet size={14} />, onClick: () => exportKprExcel(kprList) },
       ],
     },
     ...(role !== 'marketing' ? [{

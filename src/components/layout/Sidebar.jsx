@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   Users,
@@ -13,6 +13,7 @@ import {
   UserCog,
   Home,
   FileText,
+  Calculator,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -26,8 +27,8 @@ const menuByRole = {
     { path: '/units', label: 'Stok Unit', icon: Building2 },
     { path: '/bookings', label: 'Booking', icon: ClipboardList },
     { path: '/kpr', label: 'KPR', icon: CreditCard },
+    { path: '/kpr/calculator', label: 'Hitung KPR', icon: Calculator },
     { path: '/commissions', label: 'Komisi Saya', icon: BarChart3 },
-    { path: '/campaigns', label: 'Campaign', icon: Megaphone },
     { path: '/reports', label: 'Laporan', icon: FileText },
     { path: '/settings/profile', label: 'Profil', icon: Settings },
   ],
@@ -38,6 +39,7 @@ const menuByRole = {
     { path: '/units', label: 'Stok Unit', icon: Building2 },
     { path: '/bookings', label: 'Booking', icon: ClipboardList },
     { path: '/kpr', label: 'KPR', icon: CreditCard },
+    { path: '/kpr/calculator', label: 'Hitung KPR', icon: Calculator },
     { path: '/handovers', label: 'Serah Terima', icon: KeyRound },
     { path: '/commissions', label: 'Komisi Tim', icon: BarChart3 },
     { path: '/campaigns', label: 'Campaign', icon: Megaphone },
@@ -48,6 +50,7 @@ const menuByRole = {
     { path: '/dashboard/owner', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/units', label: 'Semua Unit', icon: Building2 },
     { path: '/kpr', label: 'Status KPR', icon: CreditCard },
+    { path: '/campaigns', label: 'Campaign', icon: Megaphone },
     { path: '/reports', label: 'Laporan', icon: FileText },
     { path: '/settings/users', label: 'Pengguna', icon: UserCog },
   ],

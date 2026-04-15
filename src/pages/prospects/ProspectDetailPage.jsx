@@ -83,6 +83,17 @@ export default function ProspectDetailPage() {
 
   useEffect(() => { fetchData() }, [id])
 
+  useEffect(() => {
+    if (role === 'manager') {
+      supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('role', 'marketing')
+        .order('full_name')
+        .then(({ data }) => setSalesList(data || []))
+    }
+  }, [role])
+
   const handleAddActivity = async (e) => {
     e.preventDefault()
     if (!activityForm.notes) return
@@ -278,6 +289,9 @@ export default function ProspectDetailPage() {
                 onChange={(e) => setAssignTo(e.target.value)}
               >
                 <option value="">Pilih sales...</option>
+                {salesList.map((s) => (
+                  <option key={s.id} value={s.id}>{s.full_name}</option>
+                ))}
               </Select>
               <Button className="w-full mt-3" size="sm" onClick={handleAssign} loading={actionLoading}>
                 <UserCheck size={14} /> Assign

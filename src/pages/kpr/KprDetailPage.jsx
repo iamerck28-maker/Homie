@@ -54,6 +54,18 @@ export default function KprDetailPage() {
     submission_date: new Date().toISOString().split('T')[0],
     notes: '',
   })
+  const [bookings, setBookings] = useState([])
+
+  useEffect(() => {
+    if (isNew) {
+      supabase
+        .from('bookings')
+        .select('id, buyer_name, unit:units(nomor)')
+        .eq('payment_method', 'kpr')
+        .order('created_at', { ascending: false })
+        .then(({ data }) => setBookings(data || []))
+    }
+  }, [isNew])
 
   const fetchData = async () => {
     setLoading(true)
@@ -159,7 +171,15 @@ export default function KprDetailPage() {
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <form onSubmit={handleCreateKpr} className="space-y-4">
               {formError && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{formError}</div>}
-              <Input label="Booking ID" required value={form.booking_id} onChange={(e) => setForm({ ...form, booking_id: e.target.value })} placeholder="UUID booking" />
+              <Select label="Booking (Pembeli)" required value={form.booking_id}
+                onChange={(e) => setForm({ ...form, booking_id: e.target.value })}>
+                <option value="">Pilih booking KPR...</option>
+                {bookings.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.buyer_name} — Unit {b.unit?.nomor || '-'}
+                  </option>
+                ))}
+              </Select>
               <Input label="Nama Bank" required value={form.bank_name} onChange={(e) => setForm({ ...form, bank_name: e.target.value })} placeholder="BCA, BRI, Mandiri, dll" />
               <Input label="Tanggal Pengajuan" type="date" value={form.submission_date} onChange={(e) => setForm({ ...form, submission_date: e.target.value })} />
               <Textarea label="Catatan" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />

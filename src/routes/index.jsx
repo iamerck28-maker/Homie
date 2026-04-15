@@ -26,6 +26,7 @@ import BookingDetailPage from '../pages/bookings/BookingDetailPage'
 // KPR
 import KprListPage from '../pages/kpr/KprListPage'
 import KprDetailPage from '../pages/kpr/KprDetailPage'
+import KprCalculatorPage from '../pages/kpr/KprCalculatorPage'
 
 // Commissions
 import CommissionPage from '../pages/commissions/CommissionPage'
@@ -120,6 +121,10 @@ const router = createBrowserRouter([
     element: <WithLayout allowedRoles={['marketing', 'manager', 'owner']}><KprListPage /></WithLayout>,
   },
   {
+    path: '/kpr/calculator',
+    element: <WithLayout allowedRoles={['marketing', 'manager']}><KprCalculatorPage /></WithLayout>,
+  },
+  {
     path: '/kpr/:id',
     element: <WithLayout allowedRoles={['marketing', 'manager', 'owner']}><KprDetailPage /></WithLayout>,
   },
@@ -153,7 +158,7 @@ const router = createBrowserRouter([
   // Campaigns
   {
     path: '/campaigns',
-    element: <WithLayout allowedRoles={['marketing', 'manager']}><CampaignPage /></WithLayout>,
+    element: <WithLayout allowedRoles={['manager', 'owner']}><CampaignPage /></WithLayout>,
   },
 
   // Handovers

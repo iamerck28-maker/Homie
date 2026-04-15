@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Building2, TrendingUp, CreditCard, Users, ChevronDown } from 'lucide-react'
+import { Building2, TrendingUp, CreditCard, Users, ChevronDown, Megaphone } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
+import Badge from '../../components/ui/Badge'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
@@ -28,6 +29,7 @@ export default function OwnerDashboard() {
   const [stats, setStats] = useState(null)
   const [projectStats, setProjectStats] = useState([])
   const [kprStats, setKprStats] = useState({})
+  const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -80,6 +82,23 @@ export default function OwnerDashboard() {
         cair: (kpr || []).filter((k) => k.status === 'cair').length,
         ditolak: (kpr || []).filter((k) => k.status === 'ditolak').length,
       })
+
+      // Fetch campaigns
+      let campaignQuery = supabase
+        .from('campaigns')
+        .select(`*, prospects(id, bookings(id, unit:units(harga)))`)
+        .order('created_at', { ascending: false })
+      if (selectedProject !== 'all') campaignQuery = campaignQuery.eq('project_id', selectedProject)
+      const { data: campaignData } = await campaignQuery
+      const enrichedCampaigns = (campaignData || []).map((c) => {
+        const leads = c.prospects?.length || 0
+        const closings = c.prospects?.filter((p) => p.bookings?.length > 0).length || 0
+        const revenue = c.prospects?.reduce((sum, p) =>
+          sum + (p.bookings?.reduce((s2, b) => s2 + (b.unit?.harga || 0), 0) || 0), 0) || 0
+        const roi = c.budget > 0 ? Math.round(((revenue - c.budget) / c.budget) * 100) : null
+        return { ...c, _leads: leads, _closings: closings, _revenue: revenue, _roi: roi }
+      })
+      setCampaigns(enrichedCampaigns)
 
       // Per project stats
       if (selectedProject === 'all' && projectsData) {
@@ -188,6 +207,50 @@ export default function OwnerDashboard() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Campaign Analytics */}
+      <div className="mt-6 bg-white rounded-xl border border-gray-100 p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Megaphone size={16} className="text-primary-600" />
+          <h3 className="font-semibold text-gray-900">Campaign Analytics</h3>
+        </div>
+        {campaigns.length === 0 ? (
+          <p className="text-sm text-gray-400 py-4 text-center">Belum ada data campaign</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-500 text-xs border-b border-gray-100">
+                  <th className="pb-3 font-medium">Campaign</th>
+                  <th className="pb-3 font-medium">Channel</th>
+                  <th className="pb-3 font-medium text-right">Budget</th>
+                  <th className="pb-3 font-medium text-right">Leads</th>
+                  <th className="pb-3 font-medium text-right">Closing</th>
+                  <th className="pb-3 font-medium text-right">Revenue</th>
+                  <th className="pb-3 font-medium text-right">ROI</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {campaigns.map((c) => (
+                  <tr key={c.id}>
+                    <td className="py-3 font-medium text-gray-900">{c.name}</td>
+                    <td className="py-3">
+                      <Badge variant="default" size="sm">{c.channel?.replace('_', ' ')}</Badge>
+                    </td>
+                    <td className="py-3 text-right text-gray-600">{c.budget ? formatRupiah(c.budget) : '-'}</td>
+                    <td className="py-3 text-right text-gray-600">{c._leads}</td>
+                    <td className="py-3 text-right text-gray-600">{c._closings}</td>
+                    <td className="py-3 text-right text-gray-600">{formatRupiah(c._revenue)}</td>
+                    <td className={`py-3 text-right font-semibold ${c._roi === null ? 'text-gray-400' : c._roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {c._roi !== null ? `${c._roi}%` : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
