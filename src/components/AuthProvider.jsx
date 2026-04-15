@@ -16,74 +16,38 @@ export default function AuthProvider({ children }) {
   const { loading, setSession, setUser, setProfile, setLoading, clearAuth } = useAuthStore()
   const safetyTimeoutRef = useRef(null)
 
-  const armSafetyTimeout = () => {
-    if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
-    safetyTimeoutRef.current = setTimeout(() => {
-      setLoading(false)
-    }, 8000)
-  }
-
-  const clearSafetyTimeout = () => {
-    if (safetyTimeoutRef.current) {
-      clearTimeout(safetyTimeoutRef.current)
-      safetyTimeoutRef.current = null
-    }
-  }
-
   useEffect(() => {
-    armSafetyTimeout()
+    // Jaminan: loading pasti selesai dalam 3 detik — tidak bisa di-cancel oleh async handler
+    safetyTimeoutRef.current = setTimeout(() => setLoading(false), 3000)
 
-    // Cek session aktif saat pertama load
-    supabase.auth.getSession()
-      .then(async ({ data: { session } }) => {
-        try {
-          if (session) {
-            const profile = await fetchProfile(session.user.id)
-            setSession(session)
-            setUser(session.user)
-            setProfile(profile)
-          }
-        } catch (err) {
-          console.error('AuthProvider getSession error:', err)
-        } finally {
-          clearSafetyTimeout()
-          setLoading(false)
-        }
-      })
-      .catch((err) => {
-        console.error('AuthProvider getSession failed:', err)
-        clearSafetyTimeout()
-        setLoading(false)
-      })
-
-    // Listen perubahan auth state — update silent tanpa full-screen loading
+    // onAuthStateChange menangani semua event termasuk INITIAL_SESSION —
+    // tidak perlu getSession() terpisah yang bisa menyebabkan double-fetch dan race condition
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
-        clearSafetyTimeout()
         clearAuth()
-      } else {
-        // SIGNED_IN, TOKEN_REFRESHED, INITIAL_SESSION — update session/profile tanpa ganggu UI
-        try {
-          const profile = await fetchProfile(session.user.id)
-          setSession(session)
-          setUser(session.user)
-          setProfile(profile)
-        } catch (err) {
-          console.error('AuthProvider onAuthStateChange error:', err)
-        } finally {
-          clearSafetyTimeout()
-          setLoading(false)
-        }
+        return
+      }
+
+      // INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED — update session & profile secara silent
+      try {
+        const profile = await fetchProfile(session.user.id)
+        setSession(session)
+        setUser(session.user)
+        setProfile(profile)
+      } catch (err) {
+        console.error('AuthProvider onAuthStateChange error:', err)
+      } finally {
+        // Segera selesaikan loading jika profile sudah siap (lebih cepat dari 3 detik)
+        setLoading(false)
       }
     })
 
     return () => {
-      clearSafetyTimeout()
+      clearTimeout(safetyTimeoutRef.current)
       subscription.unsubscribe()
     }
   }, [])
 
   if (loading) return <PageLoader />
-
   return children
 }

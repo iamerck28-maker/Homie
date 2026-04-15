@@ -46,7 +46,8 @@ import NotFoundPage from '../pages/NotFoundPage'
 
 function AuthRoot() {
   const { session, role, loading } = useAuthStore()
-  if (loading) return null
+  // Tunggu initial load & tunggu role selesai di-set setelah login
+  if (loading || (session && !role)) return null
   if (!session) return <Navigate to="/login" replace />
   if (role === 'owner') return <Navigate to="/dashboard/owner" replace />
   if (role === 'manager') return <Navigate to="/dashboard/manager" replace />
