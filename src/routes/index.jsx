@@ -41,6 +41,10 @@ import HandoverListPage from '../pages/handovers/HandoverListPage'
 import HandoverDetailPage from '../pages/handovers/HandoverDetailPage'
 import WaitlistPage from '../pages/waitlist/WaitlistPage'
 
+// Consumer Tracking (public)
+import TrackingPage from '../pages/tracking/TrackingPage'
+import TrackingDetailPage from '../pages/tracking/TrackingDetailPage'
+
 // 404
 import NotFoundPage from '../pages/NotFoundPage'
 
@@ -176,6 +180,16 @@ const router = createBrowserRouter([
   {
     path: '/waitlist',
     element: <WithLayout allowedRoles={['marketing', 'manager']}><WaitlistPage /></WithLayout>,
+  },
+
+  // Consumer Tracking — public routes (no auth required)
+  {
+    path: '/track',
+    element: <TrackingPage />,
+  },
+  {
+    path: '/track/:code',
+    element: <TrackingDetailPage />,
   },
 
   // 404

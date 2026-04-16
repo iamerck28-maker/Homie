@@ -44,7 +44,8 @@ const menuByRole = {
     { path: '/commissions', label: 'Komisi Tim', icon: BarChart3 },
     { path: '/campaigns', label: 'Campaign', icon: Megaphone },
     { path: '/reports', label: 'Laporan', icon: FileText },
-    { path: '/settings/project', label: 'Pengaturan', icon: Settings },
+    { path: '/settings/project', label: 'Pengaturan Project', icon: Settings },
+    { path: '/settings/profile', label: 'Profil Saya', icon: UserCog },
   ],
   owner: [
     { path: '/dashboard/owner', label: 'Dashboard', icon: LayoutDashboard },

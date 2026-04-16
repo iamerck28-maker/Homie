@@ -101,11 +101,11 @@ export const UNIT_STATUS_LABELS = {
  */
 export const KPR_STATUS_LABELS = {
   dokumen: 'Dokumen',
-  ojk: 'OJK',
+  ojk: 'BI Checking',
   appraisal: 'Appraisal',
   sp3k: 'SP3K',
   akad: 'Akad',
-  cair: 'Cair',
+  cair: 'Disetujui',
   ditolak: 'Ditolak',
 }
 
@@ -113,13 +113,14 @@ export const KPR_STATUS_LABELS = {
  * Label channel campaign
  */
 export const CAMPAIGN_CHANNEL_LABELS = {
-  meta_ads: 'Meta Ads',
+  meta_ads:   'Meta Ads',
   google_ads: 'Google Ads',
-  tokopedia: 'Tokopedia',
-  brosur: 'Brosur',
-  referral: 'Referral',
-  pameran: 'Pameran',
-  other: 'Lainnya',
+  tiktok_ads: 'TikTok Ads',
+  pameran:    'Pameran',
+  referral:   'Referral',
+  whatsapp:   'WhatsApp',
+  website:    'Website',
+  lainnya:    'Lainnya',
 }
 
 /**
@@ -205,6 +206,20 @@ export function getInitials(name) {
     .map((n) => n[0])
     .join('')
     .toUpperCase()
+}
+
+/**
+ * Generate kode akses unik untuk consumer tracking
+ * Format: HOM + 2-digit tahun + 2-digit bulan + 3 huruf random
+ * Contoh: HOM2604ABC
+ */
+export function generateAccessCode() {
+  const now = new Date()
+  const yy = String(now.getFullYear()).slice(-2)
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ' // tanpa I dan O agar tidak mirip angka
+  const rand = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  return `HOM${yy}${mm}${rand}`
 }
 
 /**

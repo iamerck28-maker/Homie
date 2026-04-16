@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, FileText, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, FileText, Plus, Trash2, Copy, Check, ExternalLink } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -9,7 +9,7 @@ import Input, { Select, Textarea } from '../../components/ui/Input'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
 import { supabase } from '../../lib/supabase'
 import useAuthStore from '../../store/authStore'
-import { formatDate, formatRupiah, PAYMENT_METHOD_LABELS } from '../../lib/utils'
+import { formatDate, formatRupiah, PAYMENT_METHOD_LABELS, generateAccessCode } from '../../lib/utils'
 import { generateSPR } from '../../lib/spr'
 import { useUnits } from '../../hooks/useUnits'
 import { useProjects } from '../../hooks/useProjects'
@@ -27,6 +27,7 @@ export default function BookingDetailPage() {
   const [loading, setLoading] = useState(!isNew)
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
+  const [codeCopied, setCodeCopied] = useState(false)
 
 
   const { projects } = useProjects()
@@ -109,6 +110,15 @@ export default function BookingDetailPage() {
     }
   }, [id])
 
+  // Refetch saat tab/window kembali aktif — memastikan kode akses yang ditampilkan
+  // selalu segar meskipun data diupdate dari tab lain (misal setelah replace kode massal)
+  useEffect(() => {
+    if (isNew) return
+    const onFocus = () => fetchBooking()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [id, isNew])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.unit_id || !form.buyer_name || !form.booking_date) {
@@ -124,6 +134,7 @@ export default function BookingDetailPage() {
         prospect_id: form.prospect_id || null,
         project_id: form.project_id || null,
         created_by: profile?.id,
+        access_code: generateAccessCode(),
       }
       const { data, error } = await supabase
         .from('bookings')
@@ -142,6 +153,19 @@ export default function BookingDetailPage() {
     } finally {
       setFormLoading(false)
     }
+  }
+
+  const handleCopyCode = () => {
+    if (!booking?.access_code) return
+    navigator.clipboard.writeText(booking.access_code)
+    setCodeCopied(true)
+    setTimeout(() => setCodeCopied(false), 2000)
+  }
+
+  const handleGenerateCode = async () => {
+    const newCode = generateAccessCode()
+    const { error } = await supabase.from('bookings').update({ access_code: newCode }).eq('id', id)
+    if (!error) await fetchBooking()
   }
 
   const handleGenerateSPR = async () => {
@@ -222,6 +246,50 @@ export default function BookingDetailPage() {
       <Link to="/bookings" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
         <ArrowLeft size={16} /> Kembali
       </Link>
+
+      {/* Kode Akses Konsumen */}
+      {!booking.access_code && (
+        <div className="mb-6 bg-gray-50 border border-gray-200 border-dashed rounded-xl p-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-gray-700">Belum ada kode akses</p>
+            <p className="text-xs text-gray-400 mt-0.5">Generate kode agar pembeli bisa memantau progress transaksi</p>
+          </div>
+          <button
+            onClick={handleGenerateCode}
+            className="shrink-0 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Buat Kode Akses
+          </button>
+        </div>
+      )}
+      {booking.access_code && (
+        <div className="mb-6 bg-primary-50 border border-primary-200 rounded-xl p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium text-primary-700 mb-1">Kode Akses Konsumen</p>
+              <p className="text-2xl font-mono font-bold tracking-widest text-primary-900">{booking.access_code}</p>
+              <p className="text-xs text-primary-600 mt-1">Bagikan kode ini ke pembeli untuk memantau progress transaksi mereka</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={handleCopyCode}
+                className="flex items-center gap-1.5 text-xs font-medium text-primary-700 bg-white border border-primary-300 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+              >
+                {codeCopied ? <Check size={13} /> : <Copy size={13} />}
+                {codeCopied ? 'Disalin!' : 'Salin'}
+              </button>
+              <a
+                href={`/track/${booking.access_code}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-medium text-primary-700 bg-white border border-primary-300 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+              >
+                <ExternalLink size={13} /> Preview
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-100 p-6">

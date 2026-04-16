@@ -21,6 +21,7 @@ export default function UserManagementPage() {
   const [selectedUser, setSelectedUser] = useState(null)
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
+  const [deleteError, setDeleteError] = useState('')
   const [form, setForm] = useState({ email: '', full_name: '', password: '', role: 'marketing' })
 
   const fetchUsers = async () => {
@@ -46,22 +47,11 @@ export default function UserManagementPage() {
     setFormLoading(true)
     setFormError('')
     try {
-      // Create auth user via admin API
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: form.email,
-        password: form.password,
-        email_confirm: true,
-        user_metadata: { full_name: form.full_name },
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { action: 'create', ...form },
       })
-
-      if (authError) throw authError
-
-      // Insert profile
-      await supabase.from('profiles').insert([{
-        id: authData.user.id,
-        full_name: form.full_name,
-        role: form.role,
-      }])
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
 
       setShowAddModal(false)
       setForm({ email: '', full_name: '', password: '', role: 'marketing' })
@@ -76,13 +66,19 @@ export default function UserManagementPage() {
   const handleDeleteUser = async () => {
     if (!selectedUser) return
     setFormLoading(true)
+    setDeleteError('')
     try {
-      await supabase.auth.admin.deleteUser(selectedUser.id)
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: { action: 'delete', user_id: selectedUser.id },
+      })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+
       setShowDeleteModal(false)
       setSelectedUser(null)
       await fetchUsers()
     } catch (err) {
-      console.error(err)
+      setDeleteError(err.message)
     } finally {
       setFormLoading(false)
     }
@@ -125,7 +121,7 @@ export default function UserManagementPage() {
                   <td className="px-4 py-3 text-gray-500">{formatDate(u.created_at)}</td>
                   <td className="px-4 py-3 text-right">
                     <button
-                      onClick={() => { setSelectedUser(u); setShowDeleteModal(true) }}
+                      onClick={() => { setSelectedUser(u); setDeleteError(''); setShowDeleteModal(true) }}
                       className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                     >
                       <Trash2 size={16} />
@@ -174,6 +170,7 @@ export default function UserManagementPage() {
           </>
         }
       >
+        {deleteError && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{deleteError}</div>}
         <p className="text-sm text-gray-600">
           Yakin ingin menghapus akun <strong>{selectedUser?.full_name}</strong>? Pengguna tidak bisa login tapi data historisnya tetap tersimpan.
         </p>

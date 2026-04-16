@@ -17,30 +17,34 @@ export function abortPendingRequests() {
   pendingControllers.clear()
 }
 
-const customFetch = (url, options = {}) => {
+const customFetch = async (url, options = {}) => {
   const controller = new AbortController()
   pendingControllers.add(controller)
-  return fetch(url, { ...options, signal: controller.signal })
-    .finally(() => pendingControllers.delete(controller))
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } finally {
+    pendingControllers.delete(controller)
+  }
 }
 
-// ─── CRITICAL FIX untuk Chrome ───────────────────────────────────────────────
-// Saat di halaman /login, hapus session tersimpan SEBELUM Supabase client dibuat.
-// Ini mencegah auto-refresh token yang memegang navigator.locks, yang menyebabkan
-// signInWithPassword nunggu sampai HTTP timeout (~60 detik) di Chrome.
-// Safari tidak terpengaruh karena HTTP stack-nya berbeda, tapi fix ini berlaku global.
+// ─── Deteksi public page ──────────────────────────────────────────────────────
+// Halaman /track/* adalah public (consumer tracking), tidak perlu auth.
+// Module ini di-load sekali saat app pertama dibuka — pathname saat itu
+// menentukan apakah ini tab konsumen atau tab app utama.
+const isPublicPage = typeof window !== 'undefined' &&
+  window.location.pathname.startsWith('/track')
+
+// ─── Bersihkan session saat diperlukan ───────────────────────────────────────
 try {
   const projectRef = supabaseUrl.replace('https://', '').split('.')[0]
   const storageKey = `sb-${projectRef}-auth-token`
+  const path = typeof window !== 'undefined' ? window.location.pathname : ''
 
-  const onLoginPage = typeof window !== 'undefined' &&
-    window.location.pathname === '/login'
-
-  if (onLoginPage) {
-    // Hapus session apapun — di halaman login user pasti ingin masuk ulang
+  if (path === '/login') {
+    // Halaman login: hapus semua session agar Chrome lock dilepas sebelum login baru
     localStorage.removeItem(storageKey)
-  } else {
-    // Di halaman lain: hanya hapus session yang sudah expired
+  } else if (!isPublicPage) {
+    // Halaman app: hapus hanya jika session sudah expired
     const raw = localStorage.getItem(storageKey)
     if (raw) {
       const { expires_at } = JSON.parse(raw)
@@ -49,12 +53,35 @@ try {
       }
     }
   }
+  // isPublicPage: jangan sentuh localStorage sama sekali
 } catch { /* abaikan error parsing */ }
 
+// ─── Supabase client ──────────────────────────────────────────────────────────
+// Public page (tab konsumen): persistSession & autoRefreshToken dimatikan agar
+// tidak berkompetisi dengan tab app utama dalam memperebutkan navigator.locks.
+// Dua client aktif yang sama-sama refresh token → "refresh token already used"
+// → SIGNED_OUT di salah satu tab → logout paksa.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
+    persistSession: !isPublicPage,
+    autoRefreshToken: !isPublicPage,
+    detectSessionInUrl: false,
   },
-  global: { fetch: customFetch },
+  global: { fetch: isPublicPage ? undefined : customFetch },
 })
+
+// ─── Fetch data tracking konsumen (tanpa Supabase JS client) ─────────────────
+// Menggunakan plain fetch agar tidak menyentuh navigator.locks yang sama
+// dengan client utama — mencegah lock conflict yang menyebabkan query hang.
+export async function fetchTrackingData(accessCode) {
+  const res = await fetch(`${supabaseUrl}/rest/v1/rpc/get_tracking_by_code`, {
+    method: 'POST',
+    headers: {
+      'apikey': supabaseAnonKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_access_code: accessCode }),
+  })
+  if (!res.ok) return null
+  return res.json()
+}

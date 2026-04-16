@@ -13,6 +13,7 @@ export default function ProjectSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [form, setForm] = useState({ name: '', location: '', description: '' })
 
   useEffect(() => {
@@ -38,17 +39,19 @@ export default function ProjectSettingsPage() {
     e.preventDefault()
     if (!selectedProject) return
     setSaving(true)
+    setSaveError('')
     try {
-      await supabase
+      const { error } = await supabase
         .from('projects')
         .update({ ...form, updated_at: new Date().toISOString() })
         .eq('id', selectedProject.id)
 
+      if (error) throw error
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
       await fetchProjects()
     } catch (err) {
-      console.error(err)
+      setSaveError(err.message)
     } finally {
       setSaving(false)
     }
@@ -80,6 +83,7 @@ export default function ProjectSettingsPage() {
 
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <form onSubmit={handleSave} className="space-y-4">
+              {saveError && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{saveError}</div>}
               <Input label="Nama Project" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               <Input label="Lokasi" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Kota, Provinsi" />
               <Textarea label="Deskripsi" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} />

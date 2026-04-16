@@ -130,7 +130,7 @@ Platform manajemen marketing developer properti Indonesia.
 
 ### 📣 Campaign Analytics
 - [x] Buat `CampaignPage.jsx` — ROI, closing rate, cost per lead per campaign
-- [ ] Sinkronisasi channel values dengan DB constraint *(bug aktif)*
+- [x] Sinkronisasi channel values dengan DB constraint
 
 ### 🏠 Serah Terima (Handover)
 - [x] Buat `HandoverListPage.jsx` — daftar jadwal serah terima

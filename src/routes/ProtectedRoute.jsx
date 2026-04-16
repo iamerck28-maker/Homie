@@ -10,8 +10,9 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
 
   if (!session) return <Navigate to="/login" replace />
 
-  // Session ada tapi profile/role belum siap (race condition saat re-login) — tunggu
-  if (!role) return null
+  // Session ada tapi role belum siap — ini race condition singkat saat SIGNED_IN.
+  // Jika sudah tidak loading tapi role tetap null, session kemungkinan rusak → ke login.
+  if (!role) return <Navigate to="/login" replace />
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
     return <Navigate to={getDefaultRoute(role)} replace />

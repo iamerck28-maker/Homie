@@ -33,7 +33,9 @@ export default function AuthProvider({ children }) {
         const profile = await fetchProfile(session.user.id)
         setSession(session)
         setUser(session.user)
-        setProfile(profile)
+        // Hanya update profile jika berhasil di-fetch — jangan hapus role yang sudah ada
+        // ketika profile fetch gagal (misal AbortError atau network glitch saat TOKEN_REFRESHED)
+        if (profile) setProfile(profile)
       } catch (err) {
         console.error('AuthProvider onAuthStateChange error:', err)
       } finally {
