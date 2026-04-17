@@ -19,6 +19,7 @@ export function useBookings(projectId = null) {
           prospect:prospects(id, full_name),
           created_by_profile:profiles!bookings_created_by_fkey(id, full_name)
         `)
+        .is('cancelled_at', null)
         .order('created_at', { ascending: false })
 
       if (projectId) {
@@ -75,6 +76,7 @@ export function useBookings(projectId = null) {
             prospect:prospects(id, full_name),
             created_by_profile:profiles!bookings_created_by_fkey(id, full_name)
           `)
+          .is('cancelled_at', null)
           .order('created_at', { ascending: false })
         if (projectId) query = query.eq('project_id', projectId)
         const { data, error } = await query

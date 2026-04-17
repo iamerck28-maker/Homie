@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Check, X } from 'lucide-react'
+import { ArrowLeft, Check } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -9,17 +9,8 @@ import Input, { Select, Textarea } from '../../components/ui/Input'
 import { DetailSkeleton } from '../../components/ui/Skeleton'
 import { supabase } from '../../lib/supabase'
 import useAuthStore from '../../store/authStore'
-import { formatDate, KPR_STATUS_LABELS, isWithinDays } from '../../lib/utils'
-
-const DEFAULT_DOCS = [
-  'KTP Suami/Istri',
-  'Kartu Keluarga (KK)',
-  'NPWP',
-  'Slip Gaji / SKP (3 bulan terakhir)',
-  'Rekening Koran 3 Bulan',
-  'Surat Nikah',
-  'SPR dari Developer',
-]
+import { formatDate, KPR_STATUS_LABELS } from '../../lib/utils'
+import { usePascaclosingChecklist } from '../../hooks/usePascaclosingChecklist'
 
 const kprStatuses = ['dokumen', 'ojk', 'appraisal', 'sp3k', 'akad', 'cair', 'ditolak']
 
@@ -37,18 +28,14 @@ export default function KprDetailPage() {
 
   const isNew = id === 'new'
   const [kpr, setKpr] = useState(null)
-  const [docs, setDocs] = useState([])
   const [loading, setLoading] = useState(!isNew)
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
 
   const [showStatusModal, setShowStatusModal] = useState(false)
-  const [showAddDocModal, setShowAddDocModal] = useState(false)
   const [newStatus, setNewStatus] = useState('')
   const [statusNotes, setStatusNotes] = useState('')
-  const [newDoc, setNewDoc] = useState({ doc_name: '', due_date: '' })
 
-  // New KPR form
   const [form, setForm] = useState({
     booking_id: bookingId || '',
     bank_name: '',
@@ -56,6 +43,10 @@ export default function KprDetailPage() {
     notes: '',
   })
   const [bookings, setBookings] = useState([])
+
+  const { items: checklistItems, loading: checklistLoading, toggleItem, completedCount } = usePascaclosingChecklist(
+    !isNew ? kpr?.booking?.id : null
+  )
 
   useEffect(() => {
     if (isNew) {
@@ -78,14 +69,12 @@ export default function KprDetailPage() {
           id, buyer_name, buyer_phone, payment_method, booking_date,
           unit:units(id, nomor, blok, cluster, tipe, harga),
           project:projects(id, name)
-        ),
-        kpr_documents(*)
+        )
       `)
       .eq('id', id)
       .single()
 
     setKpr(data)
-    setDocs(data?.kpr_documents || [])
     setNewStatus(data?.status || 'dokumen')
     setLoading(false)
   }
@@ -107,29 +96,12 @@ export default function KprDetailPage() {
         .single()
 
       if (error) throw error
-
-      // Insert default documents
-      const defaultDocs = DEFAULT_DOCS.map((name) => ({
-        kpr_tracking_id: data.id,
-        doc_name: name,
-        is_complete: false,
-      }))
-      await supabase.from('kpr_documents').insert(defaultDocs)
-
       navigate(`/kpr/${data.id}`)
     } catch (err) {
       setFormError(err.message)
     } finally {
       setFormLoading(false)
     }
-  }
-
-  const toggleDoc = async (docId, current) => {
-    await supabase
-      .from('kpr_documents')
-      .update({ is_complete: !current, updated_by: profile?.id, updated_at: new Date().toISOString() })
-      .eq('id', docId)
-    setDocs((prev) => prev.map((d) => d.id === docId ? { ...d, is_complete: !current } : d))
   }
 
   const handleUpdateStatus = async () => {
@@ -147,19 +119,6 @@ export default function KprDetailPage() {
     } finally {
       setFormLoading(false)
     }
-  }
-
-  const handleAddDoc = async () => {
-    if (!newDoc.doc_name) return
-    const { data } = await supabase
-      .from('kpr_documents')
-      .insert([{ kpr_tracking_id: id, doc_name: newDoc.doc_name, due_date: newDoc.due_date || null, is_complete: false }])
-      .select()
-      .single()
-
-    setDocs((prev) => [...prev, data])
-    setNewDoc({ doc_name: '', due_date: '' })
-    setShowAddDocModal(false)
   }
 
   if (isNew) {
@@ -197,8 +156,6 @@ export default function KprDetailPage() {
 
   if (loading) return <PageWrapper><DetailSkeleton /></PageWrapper>
   if (!kpr) return <PageWrapper><p>KPR tidak ditemukan</p></PageWrapper>
-
-  const completeDocs = docs.filter((d) => d.is_complete).length
 
   return (
     <PageWrapper
@@ -243,54 +200,52 @@ export default function KprDetailPage() {
             </div>
           </div>
 
-          {/* Checklist Dokumen */}
+          {/* Checklist Pasca-Closing */}
           <div className="bg-white rounded-xl border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="font-semibold text-gray-900">Checklist Dokumen</h3>
-                <p className="text-xs text-gray-400 mt-0.5">{completeDocs} dari {docs.length} dokumen lengkap</p>
+                <h3 className="font-semibold text-gray-900">Checklist Pasca-Closing</h3>
+                <p className="text-xs text-gray-400 mt-0.5">{completedCount} dari {checklistItems.length} selesai</p>
               </div>
-              <Button size="xs" variant="secondary" onClick={() => setShowAddDocModal(true)}>
-                <Plus size={14} /> Tambah Dok.
-              </Button>
+              {kpr.booking?.id && (
+                <Link
+                  to={`/bookings/${kpr.booking.id}`}
+                  className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  Kelola →
+                </Link>
+              )}
             </div>
 
-            {/* Progress bar */}
             <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4">
               <div
                 className="bg-primary-600 h-1.5 rounded-full transition-all"
-                style={{ width: docs.length > 0 ? `${(completeDocs / docs.length) * 100}%` : '0%' }}
+                style={{ width: checklistItems.length > 0 ? `${(completedCount / checklistItems.length) * 100}%` : '0%' }}
               />
             </div>
 
-            <div className="space-y-2">
-              {docs.map((doc) => {
-                const nearExpiry = doc.due_date && isWithinDays(doc.due_date, 7)
-                return (
+            {checklistLoading ? (
+              <p className="text-sm text-gray-400">Memuat checklist...</p>
+            ) : (
+              <div className="space-y-2">
+                {checklistItems.map((item) => (
                   <div
-                    key={doc.id}
+                    key={item.id}
                     className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                      doc.is_complete ? 'bg-green-50' : nearExpiry ? 'bg-orange-50' : 'hover:bg-gray-50'
+                      item.is_complete ? 'bg-green-50' : 'hover:bg-gray-50'
                     }`}
-                    onClick={() => toggleDoc(doc.id, doc.is_complete)}
+                    onClick={() => toggleItem(item.id, item.is_complete)}
                   >
-                    <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${doc.is_complete ? 'bg-green-500' : 'border-2 border-gray-300'}`}>
-                      {doc.is_complete && <Check size={12} className="text-white" />}
+                    <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${item.is_complete ? 'bg-green-500' : 'border-2 border-gray-300'}`}>
+                      {item.is_complete && <Check size={12} className="text-white" />}
                     </div>
-                    <div className="flex-1">
-                      <p className={`text-sm ${doc.is_complete ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                        {doc.doc_name}
-                      </p>
-                      {doc.due_date && (
-                        <p className={`text-xs ${nearExpiry ? 'text-orange-600 font-medium' : 'text-gray-400'}`}>
-                          {nearExpiry ? '⚠ ' : ''}Batas: {formatDate(doc.due_date)}
-                        </p>
-                      )}
-                    </div>
+                    <p className={`text-sm ${item.is_complete ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                      {item.item_name}
+                    </p>
                   </div>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -337,24 +292,6 @@ export default function KprDetailPage() {
             {kprStatuses.map((s) => <option key={s} value={s}>{KPR_STATUS_LABELS[s]}</option>)}
           </Select>
           <Textarea label="Catatan" value={statusNotes} onChange={(e) => setStatusNotes(e.target.value)} placeholder="Catatan perubahan status..." />
-        </div>
-      </Modal>
-
-      {/* Add Doc Modal */}
-      <Modal
-        isOpen={showAddDocModal}
-        onClose={() => setShowAddDocModal(false)}
-        title="Tambah Dokumen"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setShowAddDocModal(false)}>Batal</Button>
-            <Button onClick={handleAddDoc}>Tambah</Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <Input label="Nama Dokumen" required value={newDoc.doc_name} onChange={(e) => setNewDoc({ ...newDoc, doc_name: e.target.value })} placeholder="Nama dokumen..." />
-          <Input label="Batas Tanggal" type="date" value={newDoc.due_date} onChange={(e) => setNewDoc({ ...newDoc, due_date: e.target.value })} />
         </div>
       </Modal>
     </PageWrapper>

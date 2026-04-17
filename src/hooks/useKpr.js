@@ -18,8 +18,7 @@ export function useKpr(projectId = null) {
             id, buyer_name, buyer_phone, payment_method, booking_date,
             unit:units(id, nomor, blok, cluster, tipe, harga),
             project:projects(id, name)
-          ),
-          kpr_documents(*)
+          )
         `)
         .order('created_at', { ascending: false })
 
@@ -62,29 +61,6 @@ export function useKpr(projectId = null) {
     return data
   }
 
-  const updateDocument = async (docId, updates) => {
-    const { data, error } = await supabase
-      .from('kpr_documents')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', docId)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
-  }
-
-  const addDocument = async (docData) => {
-    const { data, error } = await supabase
-      .from('kpr_documents')
-      .insert([docData])
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
-  }
-
   useEffect(() => {
     let mounted = true
     const run = async () => {
@@ -99,8 +75,7 @@ export function useKpr(projectId = null) {
               id, buyer_name, buyer_phone, payment_method, booking_date,
               unit:units(id, nomor, blok, cluster, tipe, harga),
               project:projects(id, name)
-            ),
-            kpr_documents(*)
+            )
           `)
           .order('created_at', { ascending: false })
         if (projectId) query = query.eq('booking.project_id', projectId)
@@ -118,5 +93,5 @@ export function useKpr(projectId = null) {
     return () => { mounted = false }
   }, [projectId])
 
-  return { kprList, loading, error, refetch: fetchKpr, addKpr, updateKpr, updateDocument, addDocument }
+  return { kprList, loading, error, refetch: fetchKpr, addKpr, updateKpr }
 }

@@ -16,6 +16,7 @@ import {
   Calculator,
   ChevronLeft,
   ChevronRight,
+  Inbox,
 } from 'lucide-react'
 import useAuthStore from '../../store/authStore'
 import { clsx } from 'clsx'
@@ -25,6 +26,7 @@ const menuByRole = {
     { path: '/waitlist', label: 'NUP / Waitlist', icon: ListOrdered },
     { path: '/prospects', label: 'Prospek', icon: Users },
     { path: '/units', label: 'Stok Unit', icon: Building2 },
+    { path: '/booking-requests', label: 'Permintaan Booking', icon: Inbox },
     { path: '/bookings', label: 'Booking', icon: ClipboardList },
     { path: '/kpr', label: 'KPR', icon: CreditCard },
     { path: '/kpr/calculator', label: 'Hitung KPR', icon: Calculator },
@@ -37,6 +39,7 @@ const menuByRole = {
     { path: '/waitlist', label: 'NUP / Waitlist', icon: ListOrdered },
     { path: '/prospects', label: 'Prospek', icon: Users },
     { path: '/units', label: 'Stok Unit', icon: Building2 },
+    { path: '/booking-requests', label: 'Permintaan Booking', icon: Inbox },
     { path: '/bookings', label: 'Booking', icon: ClipboardList },
     { path: '/kpr', label: 'KPR', icon: CreditCard },
     { path: '/kpr/calculator', label: 'Hitung KPR', icon: Calculator },

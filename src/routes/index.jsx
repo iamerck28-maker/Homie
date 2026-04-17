@@ -22,6 +22,7 @@ import PipelinePage from '../pages/prospects/PipelinePage'
 // Bookings
 import BookingListPage from '../pages/bookings/BookingListPage'
 import BookingDetailPage from '../pages/bookings/BookingDetailPage'
+import BookingRequestsPage from '../pages/booking-requests/BookingRequestsPage'
 
 // KPR
 import KprListPage from '../pages/kpr/KprListPage'
@@ -44,6 +45,9 @@ import WaitlistPage from '../pages/waitlist/WaitlistPage'
 // Consumer Tracking (public)
 import TrackingPage from '../pages/tracking/TrackingPage'
 import TrackingDetailPage from '../pages/tracking/TrackingDetailPage'
+
+// Booking Form (public)
+import BookingFormPage from '../pages/booking-form/BookingFormPage'
 
 // 404
 import NotFoundPage from '../pages/NotFoundPage'
@@ -119,6 +123,10 @@ const router = createBrowserRouter([
     path: '/bookings/:id',
     element: <WithLayout allowedRoles={['marketing', 'manager']}><BookingDetailPage /></WithLayout>,
   },
+  {
+    path: '/booking-requests',
+    element: <WithLayout allowedRoles={['marketing', 'manager']}><BookingRequestsPage /></WithLayout>,
+  },
 
   // KPR
   {
@@ -190,6 +198,12 @@ const router = createBrowserRouter([
   {
     path: '/track/:code',
     element: <TrackingDetailPage />,
+  },
+
+  // Booking Form — public route per project
+  {
+    path: '/booking/:code',
+    element: <BookingFormPage />,
   },
 
   // 404

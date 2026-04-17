@@ -6,7 +6,7 @@ import Badge from '../../components/ui/Badge'
 import EmptyState from '../../components/ui/EmptyState'
 import { TableSkeleton } from '../../components/ui/Skeleton'
 import { useKpr } from '../../hooks/useKpr'
-import { formatDate, KPR_STATUS_LABELS, getKprStatusColor, isWithinDays } from '../../lib/utils'
+import { formatDate, KPR_STATUS_LABELS, getKprStatusColor } from '../../lib/utils'
 
 const kprVariants = {
   dokumen: 'default',
@@ -79,21 +79,15 @@ export default function KprListPage() {
                   <th className="text-center px-4 py-3 font-medium text-gray-600">Status</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Tanggal Pengajuan</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Akad</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-600">Dok.</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filtered.map((k) => {
-                  const completeDocs = (k.kpr_documents || []).filter((d) => d.is_complete).length
-                  const totalDocs = (k.kpr_documents || []).length
-                  const hasNearExpiry = (k.kpr_documents || []).some((d) => d.due_date && isWithinDays(d.due_date, 7))
-
                   return (
-                    <tr key={k.id} className={`hover:bg-gray-50 transition-colors ${hasNearExpiry ? 'bg-orange-50' : ''}`}>
+                    <tr key={k.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
                         <p className="font-medium text-gray-900">{k.booking?.buyer_name || '-'}</p>
-                        {hasNearExpiry && <p className="text-xs text-orange-600">⚠ Dokumen hampir expired</p>}
                       </td>
                       <td className="px-4 py-3 text-gray-600">
                         {k.booking?.unit ? `Unit ${k.booking.unit.nomor}` : '-'}
@@ -104,11 +98,6 @@ export default function KprListPage() {
                       </td>
                       <td className="px-4 py-3 text-gray-600">{k.submission_date ? formatDate(k.submission_date) : '-'}</td>
                       <td className="px-4 py-3 text-gray-600">{k.akad_date ? formatDate(k.akad_date) : '-'}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`text-xs font-medium ${completeDocs === totalDocs && totalDocs > 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                          {completeDocs}/{totalDocs}
-                        </span>
-                      </td>
                       <td className="px-4 py-3 text-right">
                         <Link to={`/kpr/${k.id}`} className="text-primary-600 hover:text-primary-700 text-xs font-medium">
                           Detail

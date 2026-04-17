@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, FileText, Plus, Trash2, Copy, Check, ExternalLink } from 'lucide-react'
+import { ArrowLeft, FileText, Plus, Trash2, Copy, Check, ExternalLink, ClipboardList } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -14,6 +14,7 @@ import { generateSPR } from '../../lib/spr'
 import { useUnits } from '../../hooks/useUnits'
 import { useProjects } from '../../hooks/useProjects'
 import { usePayments } from '../../hooks/usePayments'
+import { usePascaclosingChecklist } from '../../hooks/usePascaclosingChecklist'
 
 export default function BookingDetailPage() {
   const { id } = useParams()
@@ -37,6 +38,9 @@ export default function BookingDetailPage() {
 
   // Payments
   const { payments, totalPaid, addPayment, deletePayment } = usePayments(!isNew ? id : null)
+  const { items: checklistItems, loading: checklistLoading, addItem, addFromTemplate, toggleItem, deleteItem: deleteChecklistItem, completedCount } = usePascaclosingChecklist(!isNew ? id : null)
+  const [newItemName, setNewItemName] = useState('')
+  const [showAddItem, setShowAddItem] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [paymentForm, setPaymentForm] = useState({
     type: 'dp', amount: '', payment_date: new Date().toISOString().split('T')[0],
@@ -44,6 +48,9 @@ export default function BookingDetailPage() {
   })
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentError, setPaymentError] = useState('')
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelLoading, setCancelLoading] = useState(false)
 
   const PAYMENT_TYPE_LABELS = { dp: 'Down Payment', cicilan: 'Cicilan', pelunasan: 'Pelunasan', lainnya: 'Lainnya' }
   const PAYMENT_METHOD_LABELS2 = { cash: 'Cash', transfer: 'Transfer', cek: 'Cek', giro: 'Giro' }
@@ -162,6 +169,33 @@ export default function BookingDetailPage() {
     setTimeout(() => setCodeCopied(false), 2000)
   }
 
+  const handleCancelBooking = async () => {
+    if (!cancelReason.trim()) return
+    setCancelLoading(true)
+    try {
+      await supabase.from('bookings').update({
+        cancelled_at: new Date().toISOString(),
+        cancellation_reason: cancelReason,
+        cancelled_by: profile?.id,
+      }).eq('id', id)
+      await supabase.from('units').update({ status: 'available', held_by: null, held_at: null }).eq('id', booking.unit_id)
+
+      // Sync booking_request status jika ada
+      if (booking.buyer_phone) {
+        await supabase.from('booking_requests')
+          .update({ status: 'cancelled', rejection_reason: cancelReason })
+          .eq('unit_id', booking.unit_id)
+          .eq('buyer_phone', booking.buyer_phone)
+          .eq('status', 'approved_manager')
+      }
+
+      setShowCancelModal(false)
+      navigate('/bookings')
+    } finally {
+      setCancelLoading(false)
+    }
+  }
+
   const handleGenerateCode = async () => {
     const newCode = generateAccessCode()
     const { error } = await supabase.from('bookings').update({ access_code: newCode }).eq('id', id)
@@ -238,9 +272,16 @@ export default function BookingDetailPage() {
       title={`Booking — ${booking.buyer_name}`}
       subtitle={`Unit ${booking.unit?.nomor || '-'} · ${booking.project?.name || '-'}`}
       actions={
-        <Button size="sm" onClick={handleGenerateSPR}>
-          <FileText size={14} /> {booking.spr_generated_at ? 'Cetak Ulang SPR' : 'Generate SPR'}
-        </Button>
+        <div className="flex gap-2">
+          {role === 'manager' && !booking.cancelled_at && (
+            <Button size="sm" variant="danger" onClick={() => { setCancelReason(''); setShowCancelModal(true) }}>
+              <Trash2 size={14} /> Batalkan
+            </Button>
+          )}
+          <Button size="sm" onClick={handleGenerateSPR}>
+            <FileText size={14} /> {booking.spr_generated_at ? 'Cetak Ulang SPR' : 'Generate SPR'}
+          </Button>
+        </div>
       }
     >
       <Link to="/bookings" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
@@ -359,6 +400,105 @@ export default function BookingDetailPage() {
           </div>
         )}
 
+        {/* Checklist Pasca-Closing */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6 md:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <ClipboardList size={16} className="text-primary-600" />
+                Checklist Pasca-Closing
+              </h3>
+              {checklistItems.length > 0 && (
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {completedCount}/{checklistItems.length} selesai
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => setShowAddItem((v) => !v)}
+              className="text-xs font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1"
+            >
+              <Plus size={14} /> Tambah Item
+            </button>
+          </div>
+
+          {checklistLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}
+            </div>
+          ) : checklistItems.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-sm text-gray-400 mb-3">Belum ada checklist pasca-closing</p>
+              <button
+                onClick={() => addFromTemplate(profile?.id)}
+                className="text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg transition-colors"
+              >
+                Buat dari Template
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {/* Progress bar */}
+              <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4">
+                <div
+                  className="bg-primary-500 h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${checklistItems.length > 0 ? (completedCount / checklistItems.length) * 100 : 0}%` }}
+                />
+              </div>
+              {checklistItems.map((item) => (
+                <div key={item.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 group">
+                  <button
+                    onClick={() => toggleItem(item.id, item.is_complete)}
+                    className={`w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-colors ${
+                      item.is_complete
+                        ? 'bg-green-500 border-green-500 text-white'
+                        : 'border-gray-300 hover:border-primary-400'
+                    }`}
+                  >
+                    {item.is_complete && <Check size={11} />}
+                  </button>
+                  <span className={`flex-1 text-sm ${item.is_complete ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                    {item.item_name}
+                  </span>
+                  <button
+                    onClick={() => deleteChecklistItem(item.id)}
+                    className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {showAddItem && (
+            <form
+              className="flex gap-2 mt-3"
+              onSubmit={async (e) => {
+                e.preventDefault()
+                if (!newItemName.trim()) return
+                await addItem(newItemName.trim(), profile?.id)
+                setNewItemName('')
+                setShowAddItem(false)
+              }}
+            >
+              <input
+                autoFocus
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                placeholder="Nama item checklist..."
+                className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400"
+              />
+              <button type="submit" className="text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-lg">
+                Tambah
+              </button>
+              <button type="button" onClick={() => setShowAddItem(false)} className="text-xs text-gray-400 hover:text-gray-600 px-2">
+                Batal
+              </button>
+            </form>
+          )}
+        </div>
+
         {/* Tracking Pembayaran */}
         <div className="bg-white rounded-xl border border-gray-100 p-6 md:col-span-2">
           <div className="flex items-center justify-between mb-4">
@@ -452,6 +592,35 @@ export default function BookingDetailPage() {
           <Textarea label="Catatan" value={paymentForm.notes}
             onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })} />
         </form>
+      </Modal>
+
+      {/* Modal Batalkan Booking */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title="Batalkan Booking"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowCancelModal(false)}>Batal</Button>
+            <Button variant="danger" onClick={handleCancelBooking} loading={cancelLoading} disabled={!cancelReason.trim()}>
+              Ya, Batalkan Booking
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-700">
+            Booking <span className="font-semibold">{booking?.buyer_name}</span> akan dibatalkan dan unit akan dikembalikan ke status tersedia.
+          </div>
+          <Textarea
+            label="Alasan Pembatalan"
+            required
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="Masukkan alasan pembatalan..."
+            rows={3}
+          />
+        </div>
       </Modal>
     </PageWrapper>
   )

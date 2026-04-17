@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   Home, CheckCircle2, Circle, Clock, Download,
-  AlertCircle, ChevronDown, ChevronUp, FileText,
+  AlertCircle, ChevronDown, ChevronUp, FileText, ClipboardList,
 } from 'lucide-react'
 import { fetchTrackingData } from '../../lib/supabase'
 import { formatDate, formatRupiah, PAYMENT_METHOD_LABELS } from '../../lib/utils'
@@ -115,7 +115,7 @@ export default function TrackingDetailPage() {
     )
   }
 
-  const { booking, unit, project, kpr, kpr_documents, handover, payments } = data
+  const { booking, unit, project, kpr, handover, payments, pascaclosing_items } = data
 
   // Hitung step KPR aktif
   const kprData = kpr?.[0] // ambil KPR pertama
@@ -206,6 +206,54 @@ export default function TrackingDetailPage() {
             )}
           </div>
         </SectionCard>
+
+        {/* Checklist Pasca-Closing */}
+        {pascaclosing_items?.length > 0 && (
+          <SectionCard title="Checklist Pasca-Closing">
+            <div className="space-y-1">
+              {/* Progress */}
+              {(() => {
+                const total = pascaclosing_items.length
+                const done = pascaclosing_items.filter((i) => i.is_complete).length
+                const pct = total > 0 ? Math.round((done / total) * 100) : 0
+                return (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <ClipboardList size={13} />
+                        <span>Kelengkapan Dokumen</span>
+                      </div>
+                      <span className="text-xs font-semibold text-gray-900">{done}/{total}</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full transition-all ${pct === 100 ? 'bg-green-500' : 'bg-primary-500'}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })()}
+              {/* Items */}
+              <div className="space-y-2.5">
+                {pascaclosing_items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-2.5">
+                    {item.is_complete
+                      ? <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+                      : <Circle size={16} className="text-gray-200 shrink-0" />
+                    }
+                    <span className={`text-sm ${item.is_complete ? 'text-gray-700 line-through' : 'text-gray-500'}`}>
+                      {item.item_name}
+                    </span>
+                    {item.is_complete && (
+                      <span className="ml-auto text-xs text-green-600 shrink-0">Lengkap</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </SectionCard>
+        )}
 
         {/* Riwayat Pembayaran */}
         {payments?.length > 0 && (
@@ -310,30 +358,6 @@ export default function TrackingDetailPage() {
                   </div>
                 )}
 
-                {/* Checklist dokumen */}
-                {kpr_documents?.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-50">
-                    <p className="text-xs font-medium text-gray-500 mb-3">Checklist Dokumen</p>
-                    <div className="space-y-2">
-                      {kpr_documents.map((doc) => (
-                        <div key={doc.id} className="flex items-center gap-2.5">
-                          {doc.is_complete
-                            ? <CheckCircle2 size={15} className="text-green-500 shrink-0" />
-                            : <Circle size={15} className="text-gray-200 shrink-0" />
-                          }
-                          <span className={`text-sm ${doc.is_complete ? 'text-gray-700' : 'text-gray-400'}`}>
-                            {doc.doc_name}
-                          </span>
-                          {doc.due_date && !doc.is_complete && (
-                            <span className="ml-auto text-xs text-orange-500 shrink-0">
-                              Due {formatDate(doc.due_date)}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </SectionCard>
