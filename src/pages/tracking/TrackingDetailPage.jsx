@@ -7,6 +7,15 @@ import {
 import { fetchTrackingData } from '../../lib/supabase'
 import { formatDate, formatRupiah, PAYMENT_METHOD_LABELS } from '../../lib/utils'
 
+const KPR_DOCS = [
+  'KTP Pemohon',
+  'KTP Pasangan (jika ada)',
+  'Surat Nikah / Cerai (jika berlaku)',
+  'Slip Gaji / Surat Keterangan Penghasilan',
+  'Rekening Koran 3 Bulan Terakhir',
+  'NPWP',
+]
+
 // Label & config status KPR khusus konsumen
 const KPR_STEPS = [
   { key: 'dokumen',   label: 'Pengumpulan Dokumen',   desc: 'Dokumen persyaratan KPR sedang dikumpulkan' },
@@ -360,6 +369,47 @@ export default function TrackingDetailPage() {
 
               </div>
             )}
+          </SectionCard>
+        )}
+
+        {/* Kelengkapan Dokumen KPR */}
+        {booking?.payment_method === 'kpr' && kprData && (
+          <SectionCard title="Kelengkapan Dokumen KPR">
+            <div className="space-y-1">
+              {(() => {
+                const docs = kprData.documents_checklist || {}
+                const doneDocs = KPR_DOCS.filter((d) => docs[d]).length
+                const pct = Math.round((doneDocs / KPR_DOCS.length) * 100)
+                return (
+                  <>
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs text-gray-500">Dokumen diterima</span>
+                        <span className="text-xs font-semibold text-gray-900">{doneDocs}/{KPR_DOCS.length}</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full transition-all ${pct === 100 ? 'bg-green-500' : 'bg-primary-500'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2.5">
+                      {KPR_DOCS.map((doc) => (
+                        <div key={doc} className="flex items-center gap-2.5">
+                          {docs[doc]
+                            ? <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+                            : <Circle size={16} className="text-gray-200 shrink-0" />
+                          }
+                          <span className={`text-sm ${docs[doc] ? 'text-gray-700' : 'text-gray-400'}`}>{doc}</span>
+                          {docs[doc] && <span className="ml-auto text-xs text-green-600 shrink-0">Diterima</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
           </SectionCard>
         )}
 
