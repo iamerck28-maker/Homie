@@ -15,7 +15,7 @@ export default function AppLayout({ children }) {
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
-
+  
       {/* Sidebar — desktop */}
       <div className="hidden md:flex flex-shrink-0">
         <Sidebar

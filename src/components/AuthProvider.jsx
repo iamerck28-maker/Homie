@@ -13,35 +13,37 @@ async function fetchProfile(userId) {
 }
 
 export default function AuthProvider({ children }) {
-  const { loading, setSession, setUser, setProfile, setLoading, clearAuth } = useAuthStore()
   const safetyTimeoutRef = useRef(null)
+  const fetchIdRef = useRef(0)
 
   useEffect(() => {
-    // Jaminan: loading pasti selesai dalam 3 detik — tidak bisa di-cancel oleh async handler
-    safetyTimeoutRef.current = setTimeout(() => setLoading(false), 3000)
+    const { setSession, setUser, setProfile, setLoading, clearAuth } = useAuthStore.getState()
 
-    // onAuthStateChange menangani semua event termasuk INITIAL_SESSION —
-    // tidak perlu getSession() terpisah yang bisa menyebabkan double-fetch dan race condition
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    safetyTimeoutRef.current = setTimeout(() => setLoading(false), 5000)
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         clearAuth()
         return
       }
 
-      // INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED — update session & profile secara silent
-      try {
-        const profile = await fetchProfile(session.user.id)
-        setSession(session)
-        setUser(session.user)
-        // Hanya update profile jika berhasil di-fetch — jangan hapus role yang sudah ada
-        // ketika profile fetch gagal (misal AbortError atau network glitch saat TOKEN_REFRESHED)
-        if (profile) setProfile(profile)
-      } catch (err) {
-        console.error('AuthProvider onAuthStateChange error:', err)
-      } finally {
-        // Segera selesaikan loading jika profile sudah siap (lebih cepat dari 3 detik)
-        setLoading(false)
-      }
+      // Callback SYNC — tidak await agar navigator.locks segera dilepas.
+      // Profile fetch jalan di background, tidak menghalangi query halaman lain.
+      setSession(session)
+      setUser(session.user)
+
+      const fetchId = ++fetchIdRef.current
+      ;(async () => {
+        try {
+          const profile = await fetchProfile(session.user.id)
+          if (fetchId !== fetchIdRef.current) return
+          if (profile) setProfile(profile)
+        } catch {
+          // silent
+        } finally {
+          if (fetchId === fetchIdRef.current) setLoading(false)
+        }
+      })()
     })
 
     return () => {
@@ -50,6 +52,7 @@ export default function AuthProvider({ children }) {
     }
   }, [])
 
+  const loading = useAuthStore((s) => s.loading)
   if (loading) return <PageLoader />
   return children
 }

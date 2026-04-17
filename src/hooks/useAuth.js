@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { supabase, abortPendingRequests } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import useAuthStore from '../store/authStore'
 
 export function useAuth() {
@@ -7,18 +7,10 @@ export function useAuth() {
   const navigate = useNavigate()
 
   const login = async (email, password) => {
-    // Batalkan semua request Supabase yang pending (auto-refresh token)
-    // agar internal navigator.locks dilepas sebelum signInWithPassword dipanggil
-    abortPendingRequests()
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
-
-    // Set session/user langsung dari response — tidak perlu fetch profile di sini.
-    // onAuthStateChange di AuthProvider akan fetch profile & set role secara async.
-    // AuthRoot di routes/index.jsx akan redirect ke halaman yang tepat setelah role tersedia.
-    store.setSession(data.session)
-    store.setUser(data.user)
+    // Jangan set session/user manual di sini — biarkan onAuthStateChange di AuthProvider
+    // yang handle semuanya. Double-set menyebabkan SIGNED_IN fire dua kali.
     navigate('/')
   }
 
