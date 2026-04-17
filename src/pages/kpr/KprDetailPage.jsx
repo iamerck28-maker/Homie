@@ -14,6 +14,15 @@ import { usePascaclosingChecklist } from '../../hooks/usePascaclosingChecklist'
 
 const kprStatuses = ['dokumen', 'ojk', 'appraisal', 'sp3k', 'akad', 'cair', 'ditolak']
 
+const KPR_DOCS = [
+  'KTP Pemohon',
+  'KTP Pasangan (jika ada)',
+  'Surat Nikah / Cerai (jika berlaku)',
+  'Slip Gaji / Surat Keterangan Penghasilan',
+  'Rekening Koran 3 Bulan Terakhir',
+  'NPWP',
+]
+
 const kprVariants = {
   dokumen: 'default', ojk: 'info', appraisal: 'purple',
   sp3k: 'warning', akad: 'orange', cair: 'success', ditolak: 'danger',
@@ -29,6 +38,7 @@ export default function KprDetailPage() {
   const isNew = id === 'new'
   const [kpr, setKpr] = useState(null)
   const [loading, setLoading] = useState(!isNew)
+  const [docsUpdating, setDocsUpdating] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -45,7 +55,8 @@ export default function KprDetailPage() {
   const [bookings, setBookings] = useState([])
 
   const { items: checklistItems, loading: checklistLoading, toggleItem, completedCount } = usePascaclosingChecklist(
-    !isNew ? kpr?.booking?.id : null
+    !isNew ? kpr?.booking?.id : null,
+    kpr?.booking?.payment_method
   )
 
   useEffect(() => {
@@ -91,7 +102,7 @@ export default function KprDetailPage() {
     try {
       const { data, error } = await supabase
         .from('kpr_tracking')
-        .insert([{ ...form, status: 'dokumen' }])
+        .insert([{ ...form, status: 'dokumen', created_by: profile?.id }])
         .select()
         .single()
 
@@ -119,6 +130,15 @@ export default function KprDetailPage() {
     } finally {
       setFormLoading(false)
     }
+  }
+
+  const handleToggleDoc = async (docName) => {
+    const current = kpr.documents_checklist || {}
+    const updated = { ...current, [docName]: !current[docName] }
+    setKpr((prev) => ({ ...prev, documents_checklist: updated }))
+    setDocsUpdating(true)
+    await supabase.from('kpr_tracking').update({ documents_checklist: updated }).eq('id', id)
+    setDocsUpdating(false)
   }
 
   if (isNew) {
@@ -173,6 +193,42 @@ export default function KprDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-5">
+          {/* Kelengkapan Dokumen KPR */}
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-gray-900">Kelengkapan Dokumen</h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {KPR_DOCS.filter((d) => kpr.documents_checklist?.[d]).length}/{KPR_DOCS.length} dokumen diterima
+                  {docsUpdating && <span className="ml-2 text-primary-500">Menyimpan...</span>}
+                </p>
+              </div>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4">
+              <div
+                className="bg-green-500 h-1.5 rounded-full transition-all"
+                style={{ width: `${(KPR_DOCS.filter((d) => kpr.documents_checklist?.[d]).length / KPR_DOCS.length) * 100}%` }}
+              />
+            </div>
+            <div className="space-y-1">
+              {KPR_DOCS.map((doc) => {
+                const done = !!kpr.documents_checklist?.[doc]
+                return (
+                  <div
+                    key={doc}
+                    onClick={() => handleToggleDoc(doc)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${done ? 'bg-green-50' : 'hover:bg-gray-50'}`}
+                  >
+                    <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${done ? 'bg-green-500' : 'border-2 border-gray-300'}`}>
+                      {done && <Check size={12} className="text-white" />}
+                    </div>
+                    <span className={`text-sm ${done ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{doc}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Status Timeline */}
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <h3 className="font-semibold text-gray-900 mb-4">Status Pengajuan</h3>

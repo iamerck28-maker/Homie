@@ -62,7 +62,6 @@ export default function HandoverListPage() {
       const booking = bookings.find((b) => b.id === form.booking_id)
       const { error } = await supabase.from('handovers').insert([{
         booking_id: form.booking_id,
-        unit_id: booking?.unit?.id || null,
         scheduled_date: form.scheduled_date,
         status: 'scheduled',
         checklist: DEFAULT_CHECKLIST,

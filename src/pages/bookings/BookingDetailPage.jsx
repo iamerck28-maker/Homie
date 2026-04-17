@@ -38,7 +38,7 @@ export default function BookingDetailPage() {
 
   // Payments
   const { payments, totalPaid, addPayment, deletePayment } = usePayments(!isNew ? id : null)
-  const { items: checklistItems, loading: checklistLoading, addItem, addFromTemplate, toggleItem, deleteItem: deleteChecklistItem, completedCount } = usePascaclosingChecklist(!isNew ? id : null)
+  const { items: checklistItems, loading: checklistLoading, addItem, addFromTemplate, toggleItem, deleteItem: deleteChecklistItem, completedCount } = usePascaclosingChecklist(!isNew ? id : null, booking?.payment_method)
   const [newItemName, setNewItemName] = useState('')
   const [showAddItem, setShowAddItem] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -180,10 +180,19 @@ export default function BookingDetailPage() {
       }).eq('id', id)
       await supabase.from('units').update({ status: 'available', held_by: null, held_at: null }).eq('id', booking.unit_id)
 
-      // Sync booking_request status jika ada
-      if (booking.buyer_phone) {
+      // Sync booking_request status jika ada (cari via booking_id dulu, fallback ke unit+phone)
+      const { data: linkedRequest } = await supabase
+        .from('booking_requests')
+        .select('id')
+        .eq('booking_id', id)
+        .maybeSingle()
+      if (linkedRequest) {
         await supabase.from('booking_requests')
-          .update({ status: 'cancelled', rejection_reason: cancelReason })
+          .update({ status: 'cancelled', cancellation_reason: cancelReason })
+          .eq('id', linkedRequest.id)
+      } else if (booking.buyer_phone) {
+        await supabase.from('booking_requests')
+          .update({ status: 'cancelled', cancellation_reason: cancelReason })
           .eq('unit_id', booking.unit_id)
           .eq('buyer_phone', booking.buyer_phone)
           .eq('status', 'approved_manager')
@@ -430,7 +439,7 @@ export default function BookingDetailPage() {
             <div className="text-center py-6">
               <p className="text-sm text-gray-400 mb-3">Belum ada checklist pasca-closing</p>
               <button
-                onClick={() => addFromTemplate(profile?.id)}
+                onClick={() => addFromTemplate(profile?.id, booking?.payment_method)}
                 className="text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg transition-colors"
               >
                 Buat dari Template
@@ -499,65 +508,76 @@ export default function BookingDetailPage() {
           )}
         </div>
 
-        {/* Tracking Pembayaran */}
-        <div className="bg-white rounded-xl border border-gray-100 p-6 md:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-semibold text-gray-900">Riwayat Pembayaran</h3>
-              {booking.unit?.harga > 0 && (
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Terbayar: {formatRupiah(totalPaid)} / {formatRupiah(booking.unit?.harga)}
-                  {booking.unit?.harga > 0 && (
-                    <span className="ml-1 text-primary-600 font-medium">
-                      ({Math.round((totalPaid / booking.unit.harga) * 100)}%)
-                    </span>
-                  )}
-                </p>
-              )}
-            </div>
-            <Button size="xs" onClick={() => setShowPaymentModal(true)}>
-              <Plus size={14} /> Tambah
-            </Button>
-          </div>
-
-          {/* Progress bar */}
-          {booking.unit?.harga > 0 && (
-            <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
-              <div
-                className="bg-primary-600 h-2 rounded-full transition-all"
-                style={{ width: `${Math.min(100, (totalPaid / booking.unit.harga) * 100)}%` }}
-              />
-            </div>
-          )}
-
-          {payments.length === 0 ? (
-            <p className="text-sm text-gray-400 py-4 text-center">Belum ada riwayat pembayaran</p>
-          ) : (
-            <div className="space-y-2">
-              {payments.map((p) => (
-                <div key={p.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="text-xs bg-primary-50 text-primary-700 font-medium px-2 py-1 rounded">
-                      {PAYMENT_TYPE_LABELS[p.type]}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{formatRupiah(p.amount)}</p>
-                      <p className="text-xs text-gray-400">{formatDate(p.payment_date)} · {PAYMENT_METHOD_LABELS2[p.payment_method]}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {p.notes && <p className="text-xs text-gray-400 max-w-[150px] truncate">{p.notes}</p>}
-                    {role === 'manager' && (
-                      <button onClick={() => deletePayment(p.id)} className="text-gray-300 hover:text-red-500 transition-colors">
-                        <Trash2 size={14} />
-                      </button>
+        {/* Riwayat Pembayaran — hanya untuk cash/cash_bertahap */}
+        {booking.payment_method !== 'kpr' ? (
+          <div className="bg-white rounded-xl border border-gray-100 p-6 md:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-gray-900">Riwayat Pembayaran</h3>
+                {booking.unit?.harga > 0 && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Terbayar: {formatRupiah(totalPaid)} / {formatRupiah(booking.unit?.harga)}
+                    {booking.unit?.harga > 0 && (
+                      <span className="ml-1 text-primary-600 font-medium">
+                        ({Math.round((totalPaid / booking.unit.harga) * 100)}%)
+                      </span>
                     )}
-                  </div>
-                </div>
-              ))}
+                  </p>
+                )}
+              </div>
+              <Button size="xs" onClick={() => setShowPaymentModal(true)}>
+                <Plus size={14} /> Tambah
+              </Button>
             </div>
-          )}
-        </div>
+
+            {booking.unit?.harga > 0 && (
+              <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
+                <div
+                  className="bg-primary-600 h-2 rounded-full transition-all"
+                  style={{ width: `${Math.min(100, (totalPaid / booking.unit.harga) * 100)}%` }}
+                />
+              </div>
+            )}
+
+            {payments.length === 0 ? (
+              <p className="text-sm text-gray-400 py-4 text-center">Belum ada riwayat pembayaran</p>
+            ) : (
+              <div className="space-y-2">
+                {payments.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div className="text-xs bg-primary-50 text-primary-700 font-medium px-2 py-1 rounded">
+                        {PAYMENT_TYPE_LABELS[p.type]}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{formatRupiah(p.amount)}</p>
+                        <p className="text-xs text-gray-400">{formatDate(p.payment_date)} · {PAYMENT_METHOD_LABELS2[p.payment_method]}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {p.notes && <p className="text-xs text-gray-400 max-w-[150px] truncate">{p.notes}</p>}
+                      {role === 'manager' && (
+                        <button onClick={() => deletePayment(p.id)} className="text-gray-300 hover:text-red-500 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 md:col-span-2 flex items-start gap-3">
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+              <FileText size={15} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-blue-800 mb-0.5">Pembayaran via KPR</p>
+              <p className="text-xs text-blue-600">Cicilan ditangani langsung oleh bank. Pantau progress pengajuan di bagian KPR Tracking di atas.</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal tambah pembayaran */}

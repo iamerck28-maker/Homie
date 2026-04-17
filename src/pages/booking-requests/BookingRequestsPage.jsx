@@ -105,6 +105,7 @@ export default function BookingRequestsPage() {
           supabase.from('units').update({ status: 'hold', held_by: profile.id, held_at: new Date().toISOString() }).eq('id', selected.unit_id),
           supabase.from('booking_requests').update({
             status: 'approved_manager',
+            booking_id: booking.id,
             manager_reviewed_by: profile.id,
             manager_reviewed_at: new Date().toISOString(),
           }).eq('id', selected.id),
@@ -172,7 +173,7 @@ export default function BookingRequestsPage() {
 
       await supabase.from('booking_requests').update({
         status: 'cancelled',
-        rejection_reason: cancelReason,
+        cancellation_reason: cancelReason,
         manager_reviewed_by: profile.id,
         manager_reviewed_at: new Date().toISOString(),
       }).eq('id', selected.id)
@@ -351,13 +352,19 @@ export default function BookingRequestsPage() {
               )}
             </div>
 
-            {/* Rejection / cancellation reason */}
-            {selected.rejection_reason && ['rejected', 'cancelled'].includes(selected.status) && (
-              <div className={`rounded-xl p-3 ${selected.status === 'cancelled' ? 'bg-gray-50' : 'bg-red-50'}`}>
-                <p className={`text-xs font-medium mb-1 ${selected.status === 'cancelled' ? 'text-gray-500' : 'text-red-600'}`}>
-                  {selected.status === 'cancelled' ? 'Alasan Pembatalan' : 'Alasan Penolakan'}
-                </p>
-                <p className={`text-xs ${selected.status === 'cancelled' ? 'text-gray-600' : 'text-red-700'}`}>{selected.rejection_reason}</p>
+            {/* Rejection reason */}
+            {selected.rejection_reason && selected.status === 'rejected' && (
+              <div className="bg-red-50 rounded-xl p-3">
+                <p className="text-xs font-medium text-red-600 mb-1">Alasan Penolakan</p>
+                <p className="text-xs text-red-700">{selected.rejection_reason}</p>
+              </div>
+            )}
+
+            {/* Cancellation reason */}
+            {selected.cancellation_reason && selected.status === 'cancelled' && (
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-xs font-medium text-gray-500 mb-1">Alasan Pembatalan</p>
+                <p className="text-xs text-gray-600">{selected.cancellation_reason}</p>
               </div>
             )}
 

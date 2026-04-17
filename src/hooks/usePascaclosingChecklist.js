@@ -3,20 +3,38 @@ import { supabase } from '../lib/supabase'
 
 const autoInsertingSet = new Set()
 
-const DEFAULT_ITEMS = [
-  'Tanda Tangan PPJB',
-  'Pembayaran DP Pertama',
-  'Pembayaran Pelunasan (jika cash)',
-  'Penerbitan SPR',
-  'Penjadwalan Akad / Serah Terima',
-]
+const TEMPLATES = {
+  kpr: [
+    'Tanda Tangan PPJB',
+    'Pengajuan KPR ke Bank',
+    'Penerbitan SP3K',
+    'Penerbitan SPR',
+    'Akad Kredit',
+    'Serah Terima',
+  ],
+  cash: [
+    'Tanda Tangan PPJB',
+    'Pembayaran Pelunasan',
+    'Penerbitan SPR',
+    'Serah Terima',
+  ],
+  cash_bertahap: [
+    'Tanda Tangan PPJB',
+    'Pembayaran DP Pertama',
+    'Pelunasan Cicilan',
+    'Penerbitan SPR',
+    'Serah Terima',
+  ],
+}
 
-export function usePascaclosingChecklist(bookingId) {
+const getTemplate = (method) => TEMPLATES[method] || TEMPLATES.cash
+
+export function usePascaclosingChecklist(bookingId, paymentMethod) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
 
   const fetch = async () => {
-    if (!bookingId) return
+    if (!bookingId || !paymentMethod) return
     const { data } = await supabase
       .from('pascaclosing_items')
       .select('*')
@@ -24,10 +42,13 @@ export function usePascaclosingChecklist(bookingId) {
       .order('sort_order')
       .order('created_at')
     if (data && data.length === 0) {
-      if (autoInsertingSet.has(bookingId)) return
+      if (autoInsertingSet.has(bookingId)) {
+        setLoading(false)
+        return
+      }
       autoInsertingSet.add(bookingId)
       try {
-        const rows = DEFAULT_ITEMS.map((name, i) => ({
+        const rows = getTemplate(paymentMethod).map((name, i) => ({
           booking_id: bookingId,
           item_name: name,
           sort_order: i,
@@ -44,9 +65,10 @@ export function usePascaclosingChecklist(bookingId) {
   }
 
   useEffect(() => {
+    if (!bookingId || !paymentMethod) return
     setLoading(true)
     fetch()
-  }, [bookingId])
+  }, [bookingId, paymentMethod])
 
   const addItem = async (itemName, profileId) => {
     const maxOrder = items.length > 0 ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0
@@ -59,8 +81,9 @@ export function usePascaclosingChecklist(bookingId) {
     setItems((prev) => [...prev, data])
   }
 
-  const addFromTemplate = async (profileId) => {
-    const rows = DEFAULT_ITEMS.map((name, i) => ({
+  const addFromTemplate = async (profileId, method) => {
+    const template = getTemplate(method || paymentMethod)
+    const rows = template.map((name, i) => ({
       booking_id: bookingId,
       item_name: name,
       sort_order: i,
@@ -87,5 +110,5 @@ export function usePascaclosingChecklist(bookingId) {
 
   const completedCount = items.filter((i) => i.is_complete).length
 
-  return { items, loading, addItem, addFromTemplate, toggleItem, deleteItem, completedCount, DEFAULT_ITEMS }
+  return { items, loading, addItem, addFromTemplate, toggleItem, deleteItem, completedCount, getTemplate }
 }
