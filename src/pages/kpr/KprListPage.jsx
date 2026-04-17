@@ -4,7 +4,7 @@ import { CreditCard, Search } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Badge from '../../components/ui/Badge'
 import EmptyState from '../../components/ui/EmptyState'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import { useKpr } from '../../hooks/useKpr'
 import { formatDate, KPR_STATUS_LABELS, getKprStatusColor, isWithinDays } from '../../lib/utils'
 
@@ -58,7 +58,7 @@ export default function KprListPage() {
       </div>
 
       {loading ? (
-        <LoadingSpinner />
+        <TableSkeleton />
       ) : error ? (
         <div className="text-red-600 text-sm p-4 bg-red-50 rounded-lg">{error}</div>
       ) : filtered.length === 0 ? (

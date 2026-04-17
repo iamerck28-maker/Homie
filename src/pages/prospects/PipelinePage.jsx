@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { KanbanSkeleton } from '../../components/ui/Skeleton'
 import { useProspects } from '../../hooks/useProspects'
 import { formatRelativeDate, isOverdue, PROSPECT_STATUS_LABELS } from '../../lib/utils'
 
@@ -66,7 +66,7 @@ export default function PipelinePage() {
   if (loading) {
     return (
       <PageWrapper title="Pipeline Prospek">
-        <LoadingSpinner />
+        <KanbanSkeleton />
       </PageWrapper>
     )
   }

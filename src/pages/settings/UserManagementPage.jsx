@@ -5,7 +5,7 @@ import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import Input, { Select } from '../../components/ui/Input'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { supabase } from '../../lib/supabase'
 import { formatDate } from '../../lib/utils'
@@ -95,7 +95,7 @@ export default function UserManagementPage() {
       }
     >
       {loading ? (
-        <LoadingSpinner />
+        <TableSkeleton />
       ) : users.length === 0 ? (
         <EmptyState icon={<Users size={48} />} title="Belum ada pengguna" action={<Button size="sm" onClick={() => setShowAddModal(true)}><Plus size={16} /> Tambah Pengguna</Button>} />
       ) : (

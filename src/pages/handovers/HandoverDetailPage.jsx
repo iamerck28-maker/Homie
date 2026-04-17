@@ -4,7 +4,7 @@ import { ArrowLeft, FileText, CheckCircle, XCircle, Camera, Trash2, Loader } fro
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
 import Input, { Select, Textarea } from '../../components/ui/Input'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { DetailSkeleton } from '../../components/ui/Skeleton'
 import { supabase } from '../../lib/supabase'
 import useAuthStore from '../../store/authStore'
 import { formatDate } from '../../lib/utils'
@@ -137,7 +137,7 @@ export default function HandoverDetailPage() {
     setChecklist(updated)
   }
 
-  if (loading) return <PageWrapper><LoadingSpinner /></PageWrapper>
+  if (loading) return <PageWrapper><DetailSkeleton /></PageWrapper>
   if (!handover) return <PageWrapper><p className="text-gray-500">Data tidak ditemukan</p></PageWrapper>
 
   const unit = handover.unit || handover.booking?.unit

@@ -5,7 +5,7 @@ import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import Input, { Select } from '../../components/ui/Input'
-import LoadingSpinner, { } from '../../components/ui/LoadingSpinner'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { useUnits } from '../../hooks/useUnits'
 import { useProjects } from '../../hooks/useProjects'
@@ -124,7 +124,7 @@ export default function UnitListPage() {
 
       {/* Table */}
       {loading ? (
-        <LoadingSpinner />
+        <TableSkeleton />
       ) : error ? (
         <div className="text-red-600 text-sm p-4 bg-red-50 rounded-lg">{error}</div>
       ) : filtered.length === 0 ? (

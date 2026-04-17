@@ -3,7 +3,7 @@ import { Users, Building2, TrendingUp, CreditCard, ArrowUp, ArrowDown } from 'lu
 import PageWrapper from '../../components/layout/PageWrapper'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { DashboardSkeleton } from '../../components/ui/Skeleton'
 
 function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'primary' }) {
   const colors = {
@@ -53,33 +53,20 @@ export default function ManagerDashboard() {
       const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
       const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString()
 
-      // Prospek bulan ini
-      const { data: prospectsThisMonth } = await supabase
-        .from('prospects')
-        .select('id, status, assigned_to')
-        .gte('created_at', startOfMonth)
-
-      // Prospek bulan lalu
-      const { data: prospectsLastMonth } = await supabase
-        .from('prospects')
-        .select('id, status')
-        .gte('created_at', startOfLastMonth)
-        .lte('created_at', endOfLastMonth)
-
-      // Semua prospek untuk pipeline
-      const { data: allProspects } = await supabase
-        .from('prospects')
-        .select('id, status, assigned_to, profiles!prospects_assigned_to_fkey(full_name)')
-
-      // Unit stats
-      const { data: units } = await supabase
-        .from('units')
-        .select('id, status')
-
-      // KPR stats
-      const { data: kprData } = await supabase
-        .from('kpr_tracking')
-        .select('id, status')
+      // Semua query dijalankan paralel — tidak saling menunggu
+      const [
+        { data: prospectsThisMonth },
+        { data: prospectsLastMonth },
+        { data: allProspects },
+        { data: units },
+        { data: kprData },
+      ] = await Promise.all([
+        supabase.from('prospects').select('id, status, assigned_to').gte('created_at', startOfMonth),
+        supabase.from('prospects').select('id, status').gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth),
+        supabase.from('prospects').select('id, status, assigned_to, profiles!prospects_assigned_to_fkey(full_name)'),
+        supabase.from('units').select('id, status'),
+        supabase.from('kpr_tracking').select('id, status'),
+      ])
 
       // Calculate stats
       const closingThisMonth = (prospectsThisMonth || []).filter((p) => p.status === 'closing').length
@@ -150,7 +137,7 @@ export default function ManagerDashboard() {
     cancel: 'Batal',
   }
 
-  if (loading) return <PageWrapper title="Dashboard Manager"><LoadingSpinner /></PageWrapper>
+  if (loading) return <PageWrapper title="Dashboard Manager"><DashboardSkeleton /></PageWrapper>
 
   return (
     <PageWrapper title="Dashboard Manager" subtitle="Ringkasan performa tim marketing">

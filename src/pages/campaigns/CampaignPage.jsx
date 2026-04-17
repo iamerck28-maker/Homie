@@ -5,7 +5,7 @@ import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import Input, { Select, Textarea } from '../../components/ui/Input'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { supabase } from '../../lib/supabase'
 import useAuthStore from '../../store/authStore'
@@ -166,7 +166,7 @@ export default function CampaignPage() {
       </div>
 
       {loading ? (
-        <LoadingSpinner />
+        <TableSkeleton />
       ) : campaigns.length === 0 ? (
         <EmptyState
           icon={<TrendingUp size={48} />}

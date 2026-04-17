@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import Input, { Select, Textarea } from '../../components/ui/Input'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { DetailSkeleton } from '../../components/ui/Skeleton'
 import { supabase } from '../../lib/supabase'
 import useAuthStore from '../../store/authStore'
 import {
@@ -169,7 +169,7 @@ export default function ProspectDetailPage() {
 
   const canEdit = role === 'manager' || (role === 'marketing' && prospect?.assigned_to === profile?.id)
 
-  if (loading) return <PageWrapper><LoadingSpinner /></PageWrapper>
+  if (loading) return <PageWrapper><DetailSkeleton /></PageWrapper>
   if (!prospect) return <PageWrapper><p className="text-gray-500">Prospek tidak ditemukan</p></PageWrapper>
 
   return (

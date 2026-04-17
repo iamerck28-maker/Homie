@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import Input, { Select, Textarea } from '../../components/ui/Input'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { DetailSkeleton } from '../../components/ui/Skeleton'
 import { supabase } from '../../lib/supabase'
 import useAuthStore from '../../store/authStore'
 import { formatRupiah, formatDate, UNIT_STATUS_LABELS, getUnitStatusColor } from '../../lib/utils'
@@ -81,7 +81,7 @@ export default function UnitDetailPage() {
     }
   }
 
-  if (loading) return <PageWrapper><LoadingSpinner /></PageWrapper>
+  if (loading) return <PageWrapper><DetailSkeleton /></PageWrapper>
   if (!unit) return <PageWrapper><p className="text-gray-500">Unit tidak ditemukan</p></PageWrapper>
 
   return (

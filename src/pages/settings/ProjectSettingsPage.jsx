@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
 import Input, { Textarea } from '../../components/ui/Input'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { DetailSkeleton } from '../../components/ui/Skeleton'
 import { supabase } from '../../lib/supabase'
 import useAuthStore from '../../store/authStore'
 
@@ -57,7 +57,7 @@ export default function ProjectSettingsPage() {
     }
   }
 
-  if (loading) return <PageWrapper title="Pengaturan Project"><LoadingSpinner /></PageWrapper>
+  if (loading) return <PageWrapper title="Pengaturan Project"><DetailSkeleton /></PageWrapper>
 
   return (
     <PageWrapper title="Pengaturan Project" subtitle="Edit informasi project yang Anda kelola">

@@ -4,7 +4,7 @@ import PageWrapper from '../../components/layout/PageWrapper'
 import Badge from '../../components/ui/Badge'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { DashboardSkeleton } from '../../components/ui/Skeleton'
 
 function StatCard({ title, value, subtitle, icon: Icon }) {
   return (
@@ -39,26 +39,35 @@ export default function OwnerDashboard() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Fetch all projects
-      const { data: projectsData } = await supabase
-        .from('projects')
-        .select('*')
-        .order('name')
-
-      setProjects(projectsData || [])
-
-      // Fetch units
+      // Buat semua query dulu (belum await)
       let unitQuery = supabase.from('units').select('id, status, harga, project_id, projects(name, manager_id)')
       if (selectedProject !== 'all') unitQuery = unitQuery.eq('project_id', selectedProject)
-      const { data: units } = await unitQuery
 
-      // Fetch KPR
-      const { data: kpr } = await supabase.from('kpr_tracking').select('id, status')
-
-      // Fetch prospects
       let prospectQuery = supabase.from('prospects').select('id, status, project_id')
       if (selectedProject !== 'all') prospectQuery = prospectQuery.eq('project_id', selectedProject)
-      const { data: prospects } = await prospectQuery
+
+      let campaignQuery = supabase
+        .from('campaigns')
+        .select(`*, prospects(id, bookings(id, unit:units(harga)))`)
+        .order('created_at', { ascending: false })
+      if (selectedProject !== 'all') campaignQuery = campaignQuery.eq('project_id', selectedProject)
+
+      // Semua query dijalankan paralel
+      const [
+        { data: projectsData },
+        { data: units },
+        { data: kpr },
+        { data: prospects },
+        { data: campaignData },
+      ] = await Promise.all([
+        supabase.from('projects').select('*').order('name'),
+        unitQuery,
+        supabase.from('kpr_tracking').select('id, status'),
+        prospectQuery,
+        campaignQuery,
+      ])
+
+      setProjects(projectsData || [])
 
       const totalUnits = (units || []).length
       const soldUnits = (units || []).filter((u) => u.status === 'sold').length
@@ -82,14 +91,6 @@ export default function OwnerDashboard() {
         cair: (kpr || []).filter((k) => k.status === 'cair').length,
         ditolak: (kpr || []).filter((k) => k.status === 'ditolak').length,
       })
-
-      // Fetch campaigns
-      let campaignQuery = supabase
-        .from('campaigns')
-        .select(`*, prospects(id, bookings(id, unit:units(harga)))`)
-        .order('created_at', { ascending: false })
-      if (selectedProject !== 'all') campaignQuery = campaignQuery.eq('project_id', selectedProject)
-      const { data: campaignData } = await campaignQuery
       const enrichedCampaigns = (campaignData || []).map((c) => {
         const leads = c.prospects?.length || 0
         const closings = c.prospects?.filter((p) => p.bookings?.length > 0).length || 0
@@ -125,7 +126,7 @@ export default function OwnerDashboard() {
     }
   }
 
-  if (loading) return <PageWrapper title="Dashboard Owner"><LoadingSpinner /></PageWrapper>
+  if (loading) return <PageWrapper title="Dashboard Owner"><DashboardSkeleton /></PageWrapper>
 
   return (
     <PageWrapper

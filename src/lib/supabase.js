@@ -34,27 +34,21 @@ const customFetch = async (url, options = {}) => {
 const isPublicPage = typeof window !== 'undefined' &&
   window.location.pathname.startsWith('/track')
 
-// ─── Bersihkan session saat diperlukan ───────────────────────────────────────
+// ─── Bersihkan session hanya saat di halaman login ───────────────────────────
+// JANGAN hapus token yang expired di sini — Supabase akan otomatis refresh
+// menggunakan refresh_token. Jika kita hapus token expired, refresh_token ikut
+// terhapus dan user terpaksa login ulang padahal refresh_token masih valid.
 try {
   const projectRef = supabaseUrl.replace('https://', '').split('.')[0]
   const storageKey = `sb-${projectRef}-auth-token`
   const path = typeof window !== 'undefined' ? window.location.pathname : ''
 
   if (path === '/login') {
-    // Halaman login: hapus semua session agar Chrome lock dilepas sebelum login baru
+    // Halaman login: hapus session lama agar lock dilepas sebelum login baru
     localStorage.removeItem(storageKey)
-  } else if (!isPublicPage) {
-    // Halaman app: hapus hanya jika session sudah expired
-    const raw = localStorage.getItem(storageKey)
-    if (raw) {
-      const { expires_at } = JSON.parse(raw)
-      if (expires_at && expires_at * 1000 < Date.now()) {
-        localStorage.removeItem(storageKey)
-      }
-    }
   }
-  // isPublicPage: jangan sentuh localStorage sama sekali
-} catch { /* abaikan error parsing */ }
+  // Halaman lain: biarkan Supabase yang handle — dia akan refresh token secara otomatis
+} catch { /* abaikan error */ }
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
 // Public page (tab konsumen): persistSession & autoRefreshToken dimatikan agar

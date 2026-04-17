@@ -5,7 +5,7 @@ import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import EmptyState from '../../components/ui/EmptyState'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import { useBookings } from '../../hooks/useBookings'
 import { formatDate, formatRupiah, PAYMENT_METHOD_LABELS } from '../../lib/utils'
 import useAuthStore from '../../store/authStore'
@@ -65,7 +65,7 @@ export default function BookingListPage() {
       </div>
 
       {loading ? (
-        <LoadingSpinner />
+        <TableSkeleton />
       ) : error ? (
         <div className="text-red-600 text-sm p-4 bg-red-50 rounded-lg">{error}</div>
       ) : filtered.length === 0 ? (

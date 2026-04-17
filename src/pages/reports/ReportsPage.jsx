@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { FileText, Download, FileSpreadsheet } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import { Select } from '../../components/ui/Input'
 import { useBookings } from '../../hooks/useBookings'
 import { useProspects } from '../../hooks/useProspects'
@@ -128,7 +128,7 @@ export default function ReportsPage() {
             </div>
 
             {card.loading ? (
-              <div className="flex justify-center py-2"><LoadingSpinner size="sm" text="" /></div>
+              <TableSkeleton rows={3} cols={4} />
             ) : (
               <div className="flex gap-2">
                 {card.actions.map((action) => (

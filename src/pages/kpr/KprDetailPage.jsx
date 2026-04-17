@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import Input, { Select, Textarea } from '../../components/ui/Input'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { DetailSkeleton } from '../../components/ui/Skeleton'
 import { supabase } from '../../lib/supabase'
 import useAuthStore from '../../store/authStore'
 import { formatDate, KPR_STATUS_LABELS, isWithinDays } from '../../lib/utils'
@@ -195,7 +195,7 @@ export default function KprDetailPage() {
     )
   }
 
-  if (loading) return <PageWrapper><LoadingSpinner /></PageWrapper>
+  if (loading) return <PageWrapper><DetailSkeleton /></PageWrapper>
   if (!kpr) return <PageWrapper><p>KPR tidak ditemukan</p></PageWrapper>
 
   const completeDocs = docs.filter((d) => d.is_complete).length

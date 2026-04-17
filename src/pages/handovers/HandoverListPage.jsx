@@ -5,7 +5,7 @@ import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import EmptyState from '../../components/ui/EmptyState'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import Modal from '../../components/ui/Modal'
 import Input, { Select } from '../../components/ui/Input'
 import { supabase } from '../../lib/supabase'
@@ -92,7 +92,7 @@ export default function HandoverListPage() {
       }
     >
       {loading ? (
-        <LoadingSpinner />
+        <TableSkeleton />
       ) : handovers.length === 0 ? (
         <EmptyState
           icon={<Home size={48} />}
