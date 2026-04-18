@@ -9,7 +9,6 @@ import { TableSkeleton } from '../../components/ui/Skeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { supabase } from '../../lib/supabase'
 import useAuthStore from '../../store/authStore'
-import { useProjects } from '../../hooks/useProjects'
 import { formatRupiah, formatDate } from '../../lib/utils'
 
 const CHANNEL_LABELS = {
@@ -35,11 +34,9 @@ const CHANNEL_COLORS = {
 }
 
 export default function CampaignPage() {
-  const { profile, role } = useAuthStore()
-  const { projects } = useProjects()
+  const { profile, role, activeProject, projects } = useAuthStore()
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedProject, setSelectedProject] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
@@ -52,7 +49,7 @@ export default function CampaignPage() {
     let mounted = true
     fetchCampaigns(mounted)
     return () => { mounted = false }
-  }, [selectedProject])
+  }, [activeProject?.id])
 
   const fetchCampaigns = async (mounted = true) => {
     setLoading(true)
@@ -68,7 +65,7 @@ export default function CampaignPage() {
       `)
       .order('created_at', { ascending: false })
 
-    if (selectedProject) query = query.eq('project_id', selectedProject)
+    if (activeProject?.id) query = query.eq('project_id', activeProject.id)
 
     const { data } = await query
     if (!mounted) return
@@ -136,17 +133,6 @@ export default function CampaignPage() {
         )
       }
     >
-      {/* Filter */}
-      <div className="mb-5 max-w-xs">
-        <select
-          value={selectedProject}
-          onChange={(e) => setSelectedProject(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          <option value="">Semua Project</option>
-          {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-      </div>
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

@@ -22,13 +22,12 @@ export function useKpr(projectId = null) {
         `)
         .order('created_at', { ascending: false })
 
-      if (projectId) {
-        query = query.eq('booking.project_id', projectId)
-      }
-
       const { data, error } = await query
       if (error) throw error
-      setKprList(data || [])
+      const filtered = projectId
+        ? (data || []).filter((k) => k.booking?.project?.id === projectId)
+        : (data || [])
+      setKprList(filtered)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -78,11 +77,13 @@ export function useKpr(projectId = null) {
             )
           `)
           .order('created_at', { ascending: false })
-        if (projectId) query = query.eq('booking.project_id', projectId)
         const { data, error } = await query
         if (!mounted) return
         if (error) throw error
-        setKprList(data || [])
+        const filtered = projectId
+          ? (data || []).filter((k) => k.booking?.project?.id === projectId)
+          : (data || [])
+        setKprList(filtered)
       } catch (err) {
         if (mounted) setError(err.message)
       } finally {

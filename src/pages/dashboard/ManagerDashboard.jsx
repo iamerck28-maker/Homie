@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Users, Building2, TrendingUp, CreditCard, ArrowUp, ArrowDown } from 'lucide-react'
+import { Users, Building2, TrendingUp, CreditCard, ArrowUp, ArrowDown, ChevronDown } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import { supabase } from '../../lib/supabase'
 import { formatRupiah } from '../../lib/utils'
 import { DashboardSkeleton } from '../../components/ui/Skeleton'
+import useAuthStore from '../../store/authStore'
 
 function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'primary' }) {
   const colors = {
@@ -36,6 +37,7 @@ function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'primary'
 }
 
 export default function ManagerDashboard() {
+  const { projects, activeProject, setActiveProject } = useAuthStore()
   const [stats, setStats] = useState(null)
   const [salesPerformance, setSalesPerformance] = useState([])
   const [pipeline, setPipeline] = useState({})
@@ -43,17 +45,19 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     fetchDashboardData()
-  }, [])
+  }, [activeProject])
 
   const fetchDashboardData = async () => {
     setLoading(true)
+    const projectId = activeProject?.id ?? null
     try {
       const now = new Date()
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
       const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
       const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString()
 
-      // Semua query dijalankan paralel — tidak saling menunggu
+      const applyProject = (q) => projectId ? q.eq('project_id', projectId) : q
+
       const [
         { data: prospectsThisMonth },
         { data: prospectsLastMonth },
@@ -61,11 +65,11 @@ export default function ManagerDashboard() {
         { data: units },
         { data: kprData },
       ] = await Promise.all([
-        supabase.from('prospects').select('id, status, assigned_to').gte('created_at', startOfMonth),
-        supabase.from('prospects').select('id, status').gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth),
-        supabase.from('prospects').select('id, status, assigned_to, profiles!prospects_assigned_to_fkey(full_name)'),
-        supabase.from('units').select('id, status'),
-        supabase.from('kpr_tracking').select('id, status'),
+        applyProject(supabase.from('prospects').select('id, status, assigned_to').gte('created_at', startOfMonth)),
+        applyProject(supabase.from('prospects').select('id, status').gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth)),
+        applyProject(supabase.from('prospects').select('id, status, assigned_to, profiles!prospects_assigned_to_fkey(full_name)')),
+        applyProject(supabase.from('units').select('id, status')),
+        supabase.from('kpr_tracking').select('id, status, booking:bookings(project_id)'),
       ])
 
       // Calculate stats
@@ -106,8 +110,11 @@ export default function ManagerDashboard() {
         total: (units || []).length,
       }
 
-      const kprPending = (kprData || []).filter((k) => !['cair', 'ditolak'].includes(k.status)).length
-      const kprAkad = (kprData || []).filter((k) => k.status === 'akad').length
+      const filteredKpr = projectId
+        ? (kprData || []).filter((k) => k.booking?.project_id === projectId)
+        : (kprData || [])
+      const kprPending = filteredKpr.filter((k) => !['cair', 'ditolak'].includes(k.status)).length
+      const kprAkad = filteredKpr.filter((k) => k.status === 'akad').length
 
       setStats({
         prospectsThisMonth: totalProspects,
@@ -137,10 +144,29 @@ export default function ManagerDashboard() {
     cancel: 'Batal',
   }
 
-  if (loading) return <PageWrapper title="Dashboard Manager"><DashboardSkeleton /></PageWrapper>
+  const ProjectSelector = projects.length > 0 && (
+    <div className="relative">
+      <select
+        value={activeProject?.id || ''}
+        onChange={(e) => {
+          const p = projects.find((p) => p.id === e.target.value) ?? null
+          setActiveProject(p)
+        }}
+        className="appearance-none pl-3 pr-8 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+      >
+        <option value="">Semua Proyek</option>
+        {projects.map((p) => (
+          <option key={p.id} value={p.id}>{p.name}</option>
+        ))}
+      </select>
+      <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+    </div>
+  )
+
+  if (loading) return <PageWrapper title="Dashboard Manager" actions={ProjectSelector}><DashboardSkeleton /></PageWrapper>
 
   return (
-    <PageWrapper title="Dashboard Manager" subtitle="Ringkasan performa tim marketing">
+    <PageWrapper title="Dashboard Manager" subtitle="Ringkasan performa tim marketing" actions={ProjectSelector}>
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard

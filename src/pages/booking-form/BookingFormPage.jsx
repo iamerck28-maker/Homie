@@ -66,6 +66,7 @@ export default function BookingFormPage() {
   })
   const [ktpFile, setKtpFile] = useState(null)
   const [transferFile, setTransferFile] = useState(null)
+  const [filterTipe, setFilterTipe] = useState('')
 
   useEffect(() => {
     let mounted = true
@@ -75,6 +76,8 @@ export default function BookingFormPage() {
         setNotFound(true)
       } else {
         setFormData(data)
+        const firstTipe = [...new Set((data.units || []).map((u) => u.tipe).filter(Boolean))].sort()[0]
+        if (firstTipe) setFilterTipe(firstTipe)
       }
       setLoading(false)
     })
@@ -168,6 +171,8 @@ export default function BookingFormPage() {
 
   const { project, units } = formData
   const selectedUnit = units?.find((u) => u.id === form.unit_id)
+  const tipeList = [...new Set((units || []).map((u) => u.tipe).filter(Boolean))].sort()
+  const visibleUnits = filterTipe ? (units || []).filter((u) => u.tipe === filterTipe) : (units || [])
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -237,36 +242,74 @@ export default function BookingFormPage() {
             {!units?.length ? (
               <p className="text-sm text-gray-400 text-center py-4">Tidak ada unit tersedia saat ini.</p>
             ) : (
-              <div className="space-y-2">
-                {units.map((unit) => (
-                  <label
-                    key={unit.id}
-                    className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
-                      form.unit_id === unit.id
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="unit"
-                      value={unit.id}
-                      checked={form.unit_id === unit.id}
-                      onChange={set('unit_id')}
-                      className="accent-primary-600"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        Unit {unit.nomor}{unit.blok ? ` Blok ${unit.blok}` : ''}{unit.cluster ? ` · ${unit.cluster}` : ''}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {unit.tipe}{unit.luas_tanah ? ` · LT ${unit.luas_tanah}m²` : ''}{unit.luas_bangunan ? ` · LB ${unit.luas_bangunan}m²` : ''}
-                      </p>
+              <>
+                {/* Tipe filter chips */}
+                {tipeList.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                    {tipeList.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => { setFilterTipe(t); setForm((f) => ({ ...f, unit_id: '' })) }}
+                        className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                          filterTipe === t
+                            ? 'bg-primary-600 border-primary-600 text-white'
+                            : 'border-gray-200 text-gray-600 hover:border-primary-400'
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Selected tipe info */}
+                {filterTipe && (() => {
+                  const sample = units.find((u) => u.tipe === filterTipe)
+                  return sample ? (
+                    <div className="bg-gray-50 rounded-xl px-3.5 py-2.5 text-xs text-gray-500 flex gap-3">
+                      {sample.luas_tanah && <span>LT {sample.luas_tanah}m²</span>}
+                      {sample.luas_bangunan && <span>LB {sample.luas_bangunan}m²</span>}
+                      <span className="font-semibold text-primary-700 ml-auto">{formatRupiah(sample.harga)}</span>
                     </div>
-                    <span className="text-sm font-semibold text-primary-700 shrink-0">{formatRupiah(unit.harga)}</span>
-                  </label>
-                ))}
-              </div>
+                  ) : null
+                })()}
+
+                {/* Unit grid */}
+                <div className="grid grid-cols-3 gap-2">
+                  {visibleUnits.map((unit) => {
+                    const selected = form.unit_id === unit.id
+                    return (
+                      <label
+                        key={unit.id}
+                        className={`flex flex-col items-center justify-center gap-0.5 p-3 rounded-xl border cursor-pointer transition-colors text-center ${
+                          selected
+                            ? 'border-primary-500 bg-primary-50'
+                            : 'border-gray-100 hover:border-primary-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="unit"
+                          value={unit.id}
+                          checked={selected}
+                          onChange={set('unit_id')}
+                          className="hidden"
+                        />
+                        <span className={`text-sm font-bold ${selected ? 'text-primary-700' : 'text-gray-900'}`}>
+                          {unit.nomor}
+                        </span>
+                        {unit.blok && (
+                          <span className="text-[10px] text-gray-400">Blok {unit.blok}</span>
+                        )}
+                        {selected && (
+                          <span className="mt-1 w-2 h-2 rounded-full bg-primary-500 inline-block" />
+                        )}
+                      </label>
+                    )
+                  })}
+                </div>
+              </>
             )}
           </div>
 

@@ -15,7 +15,7 @@ const statusVariants = { pending: 'warning', approved: 'info', paid: 'success' }
 const statusLabels = { pending: 'Pending', approved: 'Disetujui', paid: 'Dibayar' }
 
 export default function CommissionPage() {
-  const { profile, role } = useAuthStore()
+  const { profile, role, activeProject } = useAuthStore()
   const [commissions, setCommissions] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -42,7 +42,7 @@ export default function CommissionPage() {
       fetchFormData()
     }
     return () => { mounted = false }
-  }, [])
+  }, [activeProject?.id])
 
   const fetchCommissions = async (mounted = true) => {
     setLoading(true)
@@ -52,7 +52,7 @@ export default function CommissionPage() {
         *,
         marketing:profiles!commissions_marketing_id_fkey(full_name),
         approved_by_profile:profiles!commissions_approved_by_fkey(full_name),
-        booking:bookings(buyer_name, booking_date, unit:units(nomor, tipe, harga))
+        booking:bookings(buyer_name, booking_date, project_id, unit:units(nomor, tipe, harga))
       `)
       .order('created_at', { ascending: false })
 
@@ -62,7 +62,11 @@ export default function CommissionPage() {
 
     const { data } = await query
     if (mounted) {
-      setCommissions(data || [])
+      const projectId = activeProject?.id ?? null
+      const filtered = projectId
+        ? (data || []).filter((c) => c.booking?.project_id === projectId)
+        : (data || [])
+      setCommissions(filtered)
       setLoading(false)
     }
   }

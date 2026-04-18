@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Inbox,
+  FolderOpen,
 } from 'lucide-react'
 import useAuthStore from '../../store/authStore'
 import { clsx } from 'clsx'
@@ -52,11 +53,12 @@ const menuByRole = {
   ],
   owner: [
     { path: '/dashboard/owner', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/projects', label: 'Daftar Proyek', icon: FolderOpen },
     { path: '/units', label: 'Semua Unit', icon: Building2 },
     { path: '/kpr', label: 'Status KPR', icon: CreditCard },
     { path: '/campaigns', label: 'Campaign', icon: Megaphone },
     { path: '/reports', label: 'Laporan', icon: FileText },
-    { path: '/settings/users', label: 'Pengguna', icon: UserCog },
+    { path: '/settings/company', label: 'Pengguna & Tim', icon: Users },
   ],
 }
 
@@ -83,7 +85,7 @@ function NavItem({ item, collapsed }) {
 }
 
 export default function Sidebar({ collapsed, onToggle }) {
-  const { profile, role } = useAuthStore()
+  const { profile, role, activeCompany } = useAuthStore()
   const menus = menuByRole[role] || []
 
   const roleLabel = {
@@ -105,9 +107,11 @@ export default function Sidebar({ collapsed, onToggle }) {
           <Home size={18} className="text-white" />
         </div>
         {!collapsed && (
-          <div>
+          <div className="min-w-0">
             <p className="font-bold text-gray-900 text-base leading-none">Homie</p>
-            <p className="text-xs text-gray-400 mt-0.5">Properti Indonesia</p>
+            <p className="text-xs text-gray-400 mt-0.5 truncate">
+              {activeCompany ? activeCompany.name : 'Properti Indonesia'}
+            </p>
           </div>
         )}
       </div>

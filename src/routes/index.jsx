@@ -49,6 +49,19 @@ import TrackingDetailPage from '../pages/tracking/TrackingDetailPage'
 // Booking Form (public)
 import BookingFormPage from '../pages/booking-form/BookingFormPage'
 
+// Company Select
+import CompanySelectPage from '../pages/auth/CompanySelectPage'
+
+// Onboarding
+import OnboardingPage from '../pages/onboarding/OnboardingPage'
+
+// Company Settings
+import CompanySettingsPage from '../pages/settings/CompanySettingsPage'
+
+// Projects
+import ProjectListPage from '../pages/projects/ProjectListPage'
+import ProjectDetailPage from '../pages/projects/ProjectDetailPage'
+
 // 404
 import NotFoundPage from '../pages/NotFoundPage'
 
@@ -78,6 +91,14 @@ const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/select-company',
+    element: <CompanySelectPage />,
+  },
+  {
+    path: '/onboarding',
+    element: <OnboardingPage />,
   },
 
   // Dashboard
@@ -155,11 +176,25 @@ const router = createBrowserRouter([
   },
   {
     path: '/settings/users',
-    element: <WithLayout allowedRoles={['owner']}><UserManagementPage /></WithLayout>,
+    element: <Navigate to="/settings/company" replace />,
   },
   {
     path: '/settings/project',
     element: <WithLayout allowedRoles={['manager']}><ProjectSettingsPage /></WithLayout>,
+  },
+  {
+    path: '/settings/company',
+    element: <WithLayout allowedRoles={['owner']}><CompanySettingsPage /></WithLayout>,
+  },
+
+  // Projects (owner)
+  {
+    path: '/projects',
+    element: <WithLayout allowedRoles={['owner']}><ProjectListPage /></WithLayout>,
+  },
+  {
+    path: '/projects/:id',
+    element: <WithLayout allowedRoles={['owner']}><ProjectDetailPage /></WithLayout>,
   },
 
   // Reports

@@ -9,7 +9,6 @@ import Input, { Select, Textarea } from '../../components/ui/Input'
 import { TableSkeleton } from '../../components/ui/Skeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { useProspects } from '../../hooks/useProspects'
-import { useProjects } from '../../hooks/useProjects'
 import useAuthStore from '../../store/authStore'
 import {
   formatDate,
@@ -30,10 +29,8 @@ const statusVariants = {
 }
 
 export default function ProspectListPage() {
-  const { role, profile } = useAuthStore()
-  const { projects } = useProjects()
-  const [selectedProject, setSelectedProject] = useState('')
-  const { prospects, loading, error, addProspect, refetch } = useProspects(selectedProject || null)
+  const { role, profile, activeProject, projects } = useAuthStore()
+  const { prospects, loading, error, addProspect, refetch } = useProspects(activeProject?.id ?? null)
   const [filterStatus, setFilterStatus] = useState('')
   const [search, setSearch] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
@@ -72,7 +69,7 @@ export default function ProspectListPage() {
   const openAddModal = () => {
     fetchSales()
     setForm({
-      project_id: projects[0]?.id || '',
+      project_id: activeProject?.id || projects[0]?.id || '',
       full_name: '',
       phone: '',
       email: '',
@@ -148,17 +145,6 @@ export default function ProspectListPage() {
             className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
-
-        {role !== 'marketing' && (
-          <select
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">Semua Project</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        )}
 
         <select
           value={filterStatus}

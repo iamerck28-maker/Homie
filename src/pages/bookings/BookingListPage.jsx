@@ -17,8 +17,8 @@ const paymentVariants = {
 }
 
 export default function BookingListPage() {
-  const { role } = useAuthStore()
-  const { bookings, loading, error } = useBookings()
+  const { role, activeProject } = useAuthStore()
+  const { bookings, loading, error } = useBookings(activeProject?.id ?? null)
   const [search, setSearch] = useState('')
   const [filterPayment, setFilterPayment] = useState('')
 

@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Bell, ChevronDown, Menu, Check, Trash2, BellOff } from 'lucide-react'
+import { LogOut, Bell, ChevronDown, Menu, Check, Trash2, BellOff, Building2, ArrowLeftRight } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { useNotifications } from '../../hooks/useNotifications'
 import { getInitials } from '../../lib/utils'
+import useAuthStore from '../../store/authStore'
 
 const TYPE_ICON = {
   booking: '📋',
@@ -28,17 +29,19 @@ function timeAgo(dateStr) {
 export default function Navbar({ onMobileMenuToggle }) {
   const { profile, role, logout } = useAuth()
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications()
+  const { companies, activeCompany, setActiveCompany } = useAuthStore()
   const navigate = useNavigate()
   const [showDropdown, setShowDropdown] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showCompanyMenu, setShowCompanyMenu] = useState(false)
   const notifRef = useRef(null)
+  const companyRef = useRef(null)
 
-  // Close notification panel when clicking outside
+  // Close panels when clicking outside
   useEffect(() => {
     const handler = (e) => {
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setShowNotifications(false)
-      }
+      if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotifications(false)
+      if (companyRef.current && !companyRef.current.contains(e.target)) setShowCompanyMenu(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -77,6 +80,57 @@ export default function Navbar({ onMobileMenuToggle }) {
       <div className="flex-1" />
 
       <div className="flex items-center gap-2">
+        {/* Company switcher — tampil jika user punya >1 company */}
+        {companies.length > 1 && activeCompany && (
+          <div className="relative" ref={companyRef}>
+            <button
+              onClick={() => { setShowCompanyMenu(!showCompanyMenu); setShowDropdown(false); setShowNotifications(false) }}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors text-sm text-gray-700 border border-gray-200"
+            >
+              <Building2 size={14} className="text-primary-600" />
+              <span className="max-w-[120px] truncate font-medium">{activeCompany.name}</span>
+              <ChevronDown size={12} className="text-gray-400" />
+            </button>
+
+            {showCompanyMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowCompanyMenu(false)} />
+                <div className="absolute right-0 top-full mt-2 w-60 bg-white rounded-xl shadow-lg border border-gray-100 z-20 overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-gray-100">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Ganti Perusahaan</p>
+                  </div>
+                  {companies.map((company) => (
+                    <button
+                      key={company.id}
+                      onClick={() => { setActiveCompany(company); setShowCompanyMenu(false) }}
+                      className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors ${
+                        activeCompany.id === company.id
+                          ? 'bg-primary-50 text-primary-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Building2 size={14} className="flex-shrink-0" />
+                      <span className="truncate">{company.name}</span>
+                      {activeCompany.id === company.id && (
+                        <Check size={13} className="ml-auto flex-shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                  <div className="border-t border-gray-100">
+                    <button
+                      onClick={() => { navigate('/select-company'); setShowCompanyMenu(false) }}
+                      className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-gray-400 hover:bg-gray-50 transition-colors"
+                    >
+                      <ArrowLeftRight size={12} />
+                      Kelola perusahaan
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Notification bell */}
         <div className="relative" ref={notifRef}>
           <button

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Filter, Building2 } from 'lucide-react'
+import { Plus, Search, Building2, Upload } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -7,8 +7,8 @@ import Modal from '../../components/ui/Modal'
 import Input, { Select } from '../../components/ui/Input'
 import { TableSkeleton } from '../../components/ui/Skeleton'
 import EmptyState from '../../components/ui/EmptyState'
+import UnitImportModal from '../../components/units/UnitImportModal'
 import { useUnits } from '../../hooks/useUnits'
-import { useProjects } from '../../hooks/useProjects'
 import useAuthStore from '../../store/authStore'
 import { formatRupiah, UNIT_STATUS_LABELS, getUnitStatusColor } from '../../lib/utils'
 import { Link } from 'react-router-dom'
@@ -21,11 +21,10 @@ const statusVariants = {
 }
 
 export default function UnitListPage() {
-  const { role } = useAuthStore()
-  const { projects } = useProjects()
-  const [selectedProject, setSelectedProject] = useState('')
-  const { units, loading, error, addUnit } = useUnits(selectedProject || null)
+  const { role, activeProject, projects } = useAuthStore()
+  const { units, loading, error, addUnit, bulkAddUnits } = useUnits(activeProject?.id ?? null)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
   const [filterStatus, setFilterStatus] = useState('')
   const [search, setSearch] = useState('')
   const [formLoading, setFormLoading] = useState(false)
@@ -83,9 +82,14 @@ export default function UnitListPage() {
       subtitle="Kelola daftar unit per project"
       actions={
         role !== 'marketing' && (
-          <Button onClick={() => setShowAddModal(true)} size="sm">
-            <Plus size={16} /> Tambah Unit
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setShowImportModal(true)} size="sm">
+              <Upload size={16} /> Import
+            </Button>
+            <Button onClick={() => setShowAddModal(true)} size="sm">
+              <Plus size={16} /> Tambah Unit
+            </Button>
+          </div>
         )
       }
     >
@@ -100,15 +104,6 @@ export default function UnitListPage() {
             className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
-
-        <select
-          value={selectedProject}
-          onChange={(e) => setSelectedProject(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          <option value="">Semua Project</option>
-          {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
 
         <select
           value={filterStatus}
@@ -140,9 +135,10 @@ export default function UnitListPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Nomor</th>
+                  <th className="text-center px-3 py-3 font-medium text-gray-400 w-10">#</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Cluster/Blok</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Tipe</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Nomor</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-600">Luas (m²)</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-600">Harga</th>
                   <th className="text-center px-4 py-3 font-medium text-gray-600">Status</th>
@@ -150,13 +146,14 @@ export default function UnitListPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {filtered.map((unit) => (
+                {filtered.map((unit, idx) => (
                   <tr key={unit.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">{unit.nomor}</td>
+                    <td className="px-3 py-3 text-center text-xs text-gray-400">{idx + 1}</td>
                     <td className="px-4 py-3 text-gray-600">
                       {[unit.cluster, unit.blok].filter(Boolean).join(' / ') || '-'}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{unit.tipe || '-'}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{unit.nomor}</td>
                     <td className="px-4 py-3 text-right text-gray-600">
                       {unit.luas_bangunan ? `${unit.luas_bangunan} / ${unit.luas_tanah || '-'}` : '-'}
                     </td>
@@ -181,6 +178,15 @@ export default function UnitListPage() {
           </div>
         </div>
       )}
+
+      {/* Import Modal */}
+      <UnitImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImport={bulkAddUnits}
+        projectId={activeProject?.id || ''}
+        projects={projects}
+      />
 
       {/* Add Unit Modal */}
       <Modal

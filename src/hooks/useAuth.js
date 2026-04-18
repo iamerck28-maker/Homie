@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useAuthStore from '../store/authStore'
+import { clearOnboardingSkipped } from '../pages/onboarding/OnboardingPage'
 
 export function useAuth() {
   const store = useAuthStore()
@@ -15,6 +16,7 @@ export function useAuth() {
   }
 
   const logout = async () => {
+    clearOnboardingSkipped()
     await supabase.auth.signOut()
     store.clearAuth()
     navigate('/login')

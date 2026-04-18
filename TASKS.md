@@ -90,6 +90,8 @@ Platform manajemen marketing developer properti Indonesia.
 - [x] Buat `src/hooks/useBookings.js` — fetch, tambah, update
 - [x] Buat `BookingListPage.jsx` — daftar, filter metode bayar
 - [x] Buat `BookingDetailPage.jsx` — detail, generate SPR, tracking pembayaran
+- [x] Buat `BookingFormPage.jsx` — form dedicated input booking baru
+- [x] Buat `BookingRequestsPage.jsx` — daftar pengajuan booking dari marketing
 - [x] Form input booking baru (unit otomatis hold)
 - [x] Generate SPR PDF via jsPDF
 
@@ -154,6 +156,15 @@ Platform manajemen marketing developer properti Indonesia.
 - [x] Tabel rincian angsuran per tahun (collapsible)
 - [x] Route `/kpr/calculator` — accessible marketing & manager
 - [x] Menu "Hitung KPR" di sidebar marketing dan manager
+
+---
+
+### 🔄 Consumer Tracking
+- [x] Buat `TrackingPage.jsx` — halaman tracking status untuk konsumen
+- [x] Buat `TrackingDetailPage.jsx` — detail progress booking & KPR dengan checklist dokumen
+
+### 💀 UX Enhancement
+- [x] Skeleton loading components — ganti spinner dengan skeleton untuk semua halaman utama
 
 ---
 

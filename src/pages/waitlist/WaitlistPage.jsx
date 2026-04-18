@@ -9,24 +9,21 @@ import { TableSkeleton } from '../../components/ui/Skeleton'
 import EmptyState from '../../components/ui/EmptyState'
 import { supabase } from '../../lib/supabase'
 import useAuthStore from '../../store/authStore'
-import { useProjects } from '../../hooks/useProjects'
 import { formatDate } from '../../lib/utils'
 
 const STATUS_LABELS = { waiting: 'Waiting', invited: 'Diundang', converted: 'Jadi Pembeli', cancelled: 'Batal' }
 const STATUS_VARIANTS = { waiting: 'warning', invited: 'info', converted: 'success', cancelled: 'danger' }
 
 export default function WaitlistPage() {
-  const { profile, role } = useAuthStore()
-  const { projects } = useProjects()
+  const { profile, role, activeProject, projects } = useAuthStore()
   const [waitlist, setWaitlist] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedProject, setSelectedProject] = useState('')
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
   const [form, setForm] = useState({
-    project_id: '', full_name: '', phone: '', email: '',
+    project_id: activeProject?.id || '', full_name: '', phone: '', email: '',
     unit_preference: '', notes: '', assigned_to: '',
   })
   const [marketingUsers, setMarketingUsers] = useState([])
@@ -35,7 +32,7 @@ export default function WaitlistPage() {
     let mounted = true
     fetchWaitlist(mounted)
     return () => { mounted = false }
-  }, [selectedProject])
+  }, [activeProject?.id])
 
   useEffect(() => {
     if (role === 'manager') {
@@ -52,7 +49,7 @@ export default function WaitlistPage() {
       .select('*, project:projects(name), assigned_to_profile:profiles!waitlist_assigned_to_fkey(full_name)')
       .order('nup_number', { ascending: true })
 
-    if (selectedProject) query = query.eq('project_id', selectedProject)
+    if (activeProject?.id) query = query.eq('project_id', activeProject.id)
 
     const { data } = await query
     if (mounted) {
@@ -145,11 +142,6 @@ export default function WaitlistPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
         </div>
-        <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-          <option value="">Semua Project</option>
-          {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
       </div>
 
       {loading ? (

@@ -24,7 +24,7 @@ const STATUS_COLORS = {
 }
 
 export default function BookingRequestsPage() {
-  const { profile, role } = useAuthStore()
+  const { profile, role, activeProject } = useAuthStore()
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
@@ -38,7 +38,7 @@ export default function BookingRequestsPage() {
 
   const fetchRequests = async () => {
     setLoading(true)
-    const { data } = await supabase
+    let query = supabase
       .from('booking_requests')
       .select(`
         *,
@@ -46,11 +46,13 @@ export default function BookingRequestsPage() {
         unit:units(id, nomor, blok, cluster, tipe, harga)
       `)
       .order('created_at', { ascending: false })
+    if (activeProject?.id) query = query.eq('project_id', activeProject.id)
+    const { data } = await query
     setRequests(data || [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchRequests() }, [])
+  useEffect(() => { fetchRequests() }, [activeProject?.id])
 
   const filtered = filterStatus === 'all'
     ? requests

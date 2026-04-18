@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Edit2, Building2 } from 'lucide-react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Edit2, Building2, Trash2 } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -20,10 +20,13 @@ const statusVariants = {
 
 export default function UnitDetailPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { role } = useAuthStore()
   const [unit, setUnit] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
   const [form, setForm] = useState({})
@@ -81,6 +84,13 @@ export default function UnitDetailPage() {
     }
   }
 
+  const handleDelete = async () => {
+    setDeleting(true)
+    const { error } = await supabase.from('units').delete().eq('id', id)
+    setDeleting(false)
+    if (!error) navigate('/units')
+  }
+
   if (loading) return <PageWrapper><DetailSkeleton /></PageWrapper>
   if (!unit) return <PageWrapper><p className="text-gray-500">Unit tidak ditemukan</p></PageWrapper>
 
@@ -90,9 +100,14 @@ export default function UnitDetailPage() {
       subtitle={unit.projects?.name}
       actions={
         role !== 'marketing' && (
-          <Button size="sm" variant="secondary" onClick={() => setShowEditModal(true)}>
-            <Edit2 size={14} /> Edit
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setShowEditModal(true)}>
+              <Edit2 size={14} /> Edit
+            </Button>
+            <Button size="sm" variant="danger" onClick={() => setShowDeleteModal(true)}>
+              <Trash2 size={14} /> Hapus
+            </Button>
+          </div>
         )
       }
     >
@@ -133,6 +148,23 @@ export default function UnitDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Hapus Unit"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)} disabled={deleting}>Batal</Button>
+            <Button variant="danger" onClick={handleDelete} loading={deleting}>Hapus</Button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-600">
+          Yakin ingin menghapus unit <strong>{unit.nomor}</strong>? Tindakan ini tidak bisa dibatalkan.
+        </p>
+      </Modal>
 
       {/* Edit Modal */}
       <Modal

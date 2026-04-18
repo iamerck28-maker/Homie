@@ -7,6 +7,7 @@ import EmptyState from '../../components/ui/EmptyState'
 import { TableSkeleton } from '../../components/ui/Skeleton'
 import { useKpr } from '../../hooks/useKpr'
 import { formatDate, KPR_STATUS_LABELS, getKprStatusColor } from '../../lib/utils'
+import useAuthStore from '../../store/authStore'
 
 const kprVariants = {
   dokumen: 'default',
@@ -19,7 +20,8 @@ const kprVariants = {
 }
 
 export default function KprListPage() {
-  const { kprList, loading, error } = useKpr()
+  const { activeProject } = useAuthStore()
+  const { kprList, loading, error } = useKpr(activeProject?.id ?? null)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
 

@@ -21,7 +21,12 @@ export function useUnits(projectId = null) {
 
       const { data, error } = await query
       if (error) throw error
-      setUnits(data || [])
+      const sorted = (data || []).sort((a, b) => {
+        const tipe = (a.tipe || '').localeCompare(b.tipe || '', undefined, { sensitivity: 'base' })
+        if (tipe !== 0) return tipe
+        return (a.nomor || '').localeCompare(b.nomor || '', undefined, { numeric: true, sensitivity: 'base' })
+      })
+      setUnits(sorted)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -79,7 +84,12 @@ export function useUnits(projectId = null) {
         const { data, error } = await query
         if (!mounted) return
         if (error) throw error
-        setUnits(data || [])
+        const sorted = (data || []).sort((a, b) => {
+          const tipe = (a.tipe || '').localeCompare(b.tipe || '', undefined, { sensitivity: 'base' })
+          if (tipe !== 0) return tipe
+          return (a.nomor || '').localeCompare(b.nomor || '', undefined, { numeric: true, sensitivity: 'base' })
+        })
+        setUnits(sorted)
       } catch (err) {
         if (mounted) setError(err.message)
       } finally {
@@ -90,5 +100,16 @@ export function useUnits(projectId = null) {
     return () => { mounted = false }
   }, [projectId])
 
-  return { units, loading, error, refetch: fetchUnits, addUnit, updateUnit, updateUnitStatus }
+  const bulkAddUnits = async (unitsData) => {
+    const { data, error } = await supabase
+      .from('units')
+      .insert(unitsData)
+      .select()
+
+    if (error) throw error
+    await fetchUnits()
+    return { success: data.length, failed: 0 }
+  }
+
+  return { units, loading, error, refetch: fetchUnits, addUnit, bulkAddUnits, updateUnit, updateUnitStatus }
 }
