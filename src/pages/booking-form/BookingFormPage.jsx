@@ -18,7 +18,7 @@ function Field({ label, required, children }) {
 function InputText({ ...props }) {
   return (
     <input
-      className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+      className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
       {...props}
     />
   )
@@ -31,7 +31,7 @@ function UploadBox({ label, accept, file, onChange, onRemove }) {
         <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
           <CheckCircle2 size={18} className="text-green-500 shrink-0" />
           <span className="text-sm text-green-700 flex-1 truncate">{file.name}</span>
-          <button onClick={onRemove} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onRemove} aria-label="Hapus file" className="p-1.5 -m-1.5 text-gray-400 hover:text-gray-600 rounded-lg">
             <X size={16} />
           </button>
         </div>
@@ -211,10 +211,10 @@ export default function BookingFormPage() {
           <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
             <h3 className="font-semibold text-gray-900 text-sm">Data Diri</h3>
             <Field label="Nama Lengkap" required>
-              <InputText placeholder="Nama sesuai KTP" value={form.buyer_name} onChange={set('buyer_name')} />
+              <InputText placeholder="Nama sesuai KTP" value={form.buyer_name} onChange={set('buyer_name')} autoComplete="name" />
             </Field>
             <Field label="Nomor WhatsApp" required>
-              <InputText placeholder="08xxxxxxxxxx" type="tel" value={form.buyer_phone} onChange={set('buyer_phone')} />
+              <InputText placeholder="08xxxxxxxxxx" type="tel" value={form.buyer_phone} onChange={set('buyer_phone')} autoComplete="tel" />
             </Field>
             <Field label="Alamat Domisili" required>
               <textarea
@@ -222,7 +222,8 @@ export default function BookingFormPage() {
                 placeholder="Alamat lengkap..."
                 value={form.buyer_address}
                 onChange={set('buyer_address')}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                autoComplete="street-address"
+                className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
               />
             </Field>
             <Field label="Foto KTP">
@@ -251,7 +252,7 @@ export default function BookingFormPage() {
                         key={t}
                         type="button"
                         onClick={() => { setFilterTipe(t); setForm((f) => ({ ...f, unit_id: '' })) }}
-                        className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        className={`shrink-0 px-4 py-2.5 rounded-full text-sm font-medium border transition-colors ${
                           filterTipe === t
                             ? 'bg-primary-600 border-primary-600 text-white'
                             : 'border-gray-200 text-gray-600 hover:border-primary-400'
@@ -294,13 +295,13 @@ export default function BookingFormPage() {
                           value={unit.id}
                           checked={selected}
                           onChange={set('unit_id')}
-                          className="hidden"
+                          className="sr-only"
                         />
                         <span className={`text-sm font-bold ${selected ? 'text-primary-700' : 'text-gray-900'}`}>
                           {unit.nomor}
                         </span>
                         {unit.blok && (
-                          <span className="text-[10px] text-gray-400">Blok {unit.blok}</span>
+                          <span className="text-xs text-gray-400">Blok {unit.blok}</span>
                         )}
                         {selected && (
                           <span className="mt-1 w-2 h-2 rounded-full bg-primary-500 inline-block" />
@@ -345,23 +346,27 @@ export default function BookingFormPage() {
                 </label>
               ))}
             </div>
-            <Field label="Bukti Transfer Booking Fee">
-              <UploadBox
-                label="Upload bukti transfer"
-                accept="image/*,application/pdf"
-                file={transferFile}
-                onChange={(e) => setTransferFile(e.target.files[0] || null)}
-                onRemove={() => setTransferFile(null)}
-              />
-            </Field>
-            <Field label="Nominal Transfer">
-              <InputText
-                type="number"
-                placeholder="Nominal yang ditransfer"
-                value={form.transfer_amount}
-                onChange={set('transfer_amount')}
-              />
-            </Field>
+            {form.payment_method && (
+              <>
+                <Field label="Bukti Transfer Booking Fee">
+                  <UploadBox
+                    label="Upload bukti transfer"
+                    accept="image/*,application/pdf"
+                    file={transferFile}
+                    onChange={(e) => setTransferFile(e.target.files[0] || null)}
+                    onRemove={() => setTransferFile(null)}
+                  />
+                </Field>
+                <Field label="Nominal Transfer">
+                  <InputText
+                    type="number"
+                    placeholder="Nominal yang ditransfer"
+                    value={form.transfer_amount}
+                    onChange={set('transfer_amount')}
+                  />
+                </Field>
+              </>
+            )}
           </div>
 
           {/* Summary unit terpilih */}
@@ -375,7 +380,7 @@ export default function BookingFormPage() {
           )}
 
           {error && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl">
+            <div role="alert" className="flex items-start gap-2 bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl">
               <AlertCircle size={16} className="shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>

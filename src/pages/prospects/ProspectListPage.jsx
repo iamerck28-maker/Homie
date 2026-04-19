@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, AlertCircle, Users } from 'lucide-react'
+import { Plus, Search, AlertCircle, Users, Upload } from 'lucide-react'
 import PageWrapper from '../../components/layout/PageWrapper'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -8,6 +8,7 @@ import Modal from '../../components/ui/Modal'
 import Input, { Select, Textarea } from '../../components/ui/Input'
 import { TableSkeleton } from '../../components/ui/Skeleton'
 import EmptyState from '../../components/ui/EmptyState'
+import ProspectImportModal from '../../components/prospects/ProspectImportModal'
 import { useProspects } from '../../hooks/useProspects'
 import useAuthStore from '../../store/authStore'
 import {
@@ -30,10 +31,11 @@ const statusVariants = {
 
 export default function ProspectListPage() {
   const { role, profile, activeProject, projects } = useAuthStore()
-  const { prospects, loading, error, addProspect, refetch } = useProspects(activeProject?.id ?? null)
+  const { prospects, loading, error, addProspect, bulkAddProspects, refetch } = useProspects(activeProject?.id ?? null)
   const [filterStatus, setFilterStatus] = useState('')
   const [search, setSearch] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError] = useState('')
   const [salesList, setSalesList] = useState([])
@@ -112,6 +114,9 @@ export default function ProspectListPage() {
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" as={Link} to="/prospects/pipeline">
             Kanban View
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setShowImportModal(true)}>
+            <Upload size={16} /> Import
           </Button>
           <Button size="sm" onClick={openAddModal}>
             <Plus size={16} /> Tambah Prospek
@@ -219,6 +224,16 @@ export default function ProspectListPage() {
           </div>
         </div>
       )}
+
+      {/* Import Modal */}
+      <ProspectImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImport={bulkAddProspects}
+        projectId={activeProject?.id || ''}
+        projects={projects}
+        defaultAssignedTo={profile?.id}
+      />
 
       {/* Add Modal */}
       <Modal

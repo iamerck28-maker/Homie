@@ -121,6 +121,16 @@ export function useProspects(projectId = null) {
     return () => { mounted = false }
   }, [projectId])
 
+  const bulkAddProspects = async (prospectsData) => {
+    const { data, error } = await supabase
+      .from('prospects')
+      .insert(prospectsData)
+      .select()
+    if (error) throw error
+    await fetchProspects()
+    return { success: data.length, failed: 0 }
+  }
+
   return {
     prospects,
     loading,
@@ -129,6 +139,7 @@ export function useProspects(projectId = null) {
     addProspect,
     updateProspect,
     deleteProspect,
+    bulkAddProspects,
     addActivity,
     getActivities,
   }
